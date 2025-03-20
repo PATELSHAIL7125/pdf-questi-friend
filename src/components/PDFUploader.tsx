@@ -1,5 +1,5 @@
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { Upload, X, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePDF } from '@/context/PDFContext';
@@ -17,6 +17,7 @@ const PDFUploader: React.FC = () => {
     setIsAnalyzing 
   } = usePDF();
   const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -42,6 +43,11 @@ const PDFUploader: React.FC = () => {
       await handleFiles(files);
     }
   }, []);
+
+  const handleBrowseClick = () => {
+    // Programmatically click the hidden file input
+    fileInputRef.current?.click();
+  };
 
   const handleFiles = async (files: FileList) => {
     if (files.length === 0) return;
@@ -102,6 +108,7 @@ const PDFUploader: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center w-full animate-slide-up">
       <input
+        ref={fileInputRef}
         id="pdf-upload"
         type="file"
         accept="application/pdf"
@@ -125,12 +132,14 @@ const PDFUploader: React.FC = () => {
         <Upload className={`w-8 h-8 mb-2 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
         <p className="text-sm font-medium mb-1">Drag & drop your PDF here</p>
         <p className="text-xs text-muted-foreground mb-3">or</p>
-        <label htmlFor="pdf-upload">
-          <Button variant="outline" className="button-transition hover:bg-primary hover:text-white">
-            <FileText className="mr-2 h-4 w-4" />
-            Browse files
-          </Button>
-        </label>
+        <Button 
+          variant="outline" 
+          className="button-transition hover:bg-primary hover:text-white"
+          onClick={handleBrowseClick}
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          Browse files
+        </Button>
       </div>
       
       {/* File info section - initially hidden, shown when a file is uploaded */}
