@@ -44,35 +44,58 @@ export const getAnswerFromPdf = async (
   pdfText: string
 ): Promise<string> => {
   try {
-    // This is a placeholder function
-    // In a real implementation, this would use an AI service to generate answers
+    // Split the PDF text into smaller chunks (sentences or paragraphs)
+    const chunks = pdfText
+      .split(/\.|\n/)
+      .map(chunk => chunk.trim())
+      .filter(chunk => chunk.length > 20); // Filter out very short chunks
     
-    // Simple keyword matching for demo purposes
-    const lowerQuestion = question.toLowerCase();
-    const lowerPdfText = pdfText.toLowerCase();
+    // Extract keywords from the question
+    const questionWords = question.toLowerCase()
+      .replace(/[^\w\s]/g, '')
+      .split(/\s+/)
+      .filter(word => word.length > 3 && !['what', 'when', 'where', 'which', 'who', 'why', 'how', 'does', 'do', 'is', 'are', 'was', 'were', 'will', 'would', 'could', 'should', 'can', 'about'].includes(word));
     
-    // Find the most relevant paragraph (simple approach)
-    const paragraphs = pdfText.split('\n').filter(p => p.trim().length > 0);
-    
-    // Score paragraphs based on keyword matches
-    const scoredParagraphs = paragraphs.map(p => {
-      const lowerP = p.toLowerCase();
-      const words = lowerQuestion.split(/\s+/).filter(w => w.length > 3);
-      const score = words.reduce((acc, word) => {
-        return acc + (lowerP.includes(word) ? 1 : 0);
-      }, 0);
-      return { paragraph: p, score };
+    // Score each chunk based on keyword matches and proximity
+    const scoredChunks = chunks.map(chunk => {
+      const lowerChunk = chunk.toLowerCase();
+      let score = 0;
+      
+      // Score based on keyword presence
+      questionWords.forEach(word => {
+        if (lowerChunk.includes(word)) {
+          score += 10;
+          
+          // Bonus for exact phrase matches
+          if (lowerChunk.includes(question.toLowerCase())) {
+            score += 50;
+          }
+        }
+      });
+      
+      // Penalize very long chunks
+      if (chunk.length > 300) {
+        score *= 0.8;
+      }
+      
+      return { chunk, score };
     });
     
-    // Sort by score
-    scoredParagraphs.sort((a, b) => b.score - a.score);
+    // Sort chunks by score (highest first)
+    scoredChunks.sort((a, b) => b.score - a.score);
     
-    // Return the most relevant paragraph or a default response
-    if (scoredParagraphs[0]?.score > 0) {
-      return `Based on the document: ${scoredParagraphs[0].paragraph}`;
-    } else {
+    // Get the top 3 most relevant chunks
+    const topChunks = scoredChunks.slice(0, 3).filter(item => item.score > 0);
+    
+    if (topChunks.length === 0) {
       return "I couldn't find specific information about that in the document. Could you rephrase your question?";
     }
+    
+    // Combine the top chunks into a coherent answer
+    const answerText = topChunks.map(item => item.chunk).join('. ');
+    
+    // Format the answer
+    return `Based on the document: "${answerText}"`;
   } catch (error) {
     console.error('Error getting answer:', error);
     return "Sorry, I encountered an error while trying to answer your question.";
