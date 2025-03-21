@@ -3,14 +3,12 @@ import React, { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePDF } from '@/context/PDFContext';
-import { getAnswerFromPdf } from '@/utils/pdfUtils';
 import { useToast } from '@/components/ui/use-toast';
 
 const QuestionInput: React.FC = () => {
   const { toast } = useToast();
-  const { pdfText, addQuestion } = usePDF();
+  const { pdfText, askQuestion, isAnswerLoading } = usePDF();
   const [question, setQuestion] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
   
   const handleQuestionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,11 +24,8 @@ const QuestionInput: React.FC = () => {
       return;
     }
     
-    setIsProcessing(true);
-    
     try {
-      const answer = await getAnswerFromPdf(question, pdfText);
-      addQuestion(question, answer);
+      await askQuestion(question);
       setQuestion('');
     } catch (error) {
       console.error('Error processing question:', error);
@@ -39,8 +34,6 @@ const QuestionInput: React.FC = () => {
         description: "There was a problem processing your question. Please try again.",
         variant: "destructive"
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
   
@@ -52,17 +45,17 @@ const QuestionInput: React.FC = () => {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Ask a question about your PDF..."
-          disabled={isProcessing || !pdfText}
+          disabled={isAnswerLoading || !pdfText}
           className="w-full h-14 pl-4 pr-16 rounded-xl border border-input 
                     bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 
                     transition-all duration-200 shadow-sm"
         />
         <Button
           type="submit"
-          disabled={isProcessing || !pdfText || !question.trim()}
+          disabled={isAnswerLoading || !pdfText || !question.trim()}
           className="absolute right-2 top-2 rounded-lg p-2 h-10 w-10 button-transition"
         >
-          {isProcessing ? (
+          {isAnswerLoading ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
             <Send className="h-5 w-5" />

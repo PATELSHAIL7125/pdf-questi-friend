@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Loader2 } from 'lucide-react';
 import { usePDF } from '@/context/PDFContext';
 import { format } from 'date-fns';
 
@@ -34,7 +34,14 @@ const AnswerDisplay: React.FC = () => {
           {/* Answer */}
           <div className="flex items-start space-x-3 pl-11">
             <div className="flex-1 glass-panel rounded-xl p-4">
-              <p className="text-sm">{qa.answer}</p>
+              {qa.isLoading ? (
+                <div className="flex items-center space-x-2 text-sm">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Analyzing document...</span>
+                </div>
+              ) : (
+                <p className="text-sm whitespace-pre-line">{qa.answer}</p>
+              )}
             </div>
           </div>
         </div>
