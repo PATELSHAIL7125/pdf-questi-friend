@@ -15,12 +15,21 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Function called");
     const { question, pdfText } = await req.json();
 
     if (!question || !pdfText) {
       return new Response(
         JSON.stringify({ error: 'Question and PDF text are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!openAIApiKey || openAIApiKey === '') {
+      console.error('OpenAI API key is not configured');
+      return new Response(
+        JSON.stringify({ error: 'OpenAI API key is not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

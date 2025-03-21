@@ -1,5 +1,6 @@
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 type Question = {
   id: string;
@@ -68,20 +69,17 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsAnswerLoading(true);
     
     try {
-      // Call the Supabase Edge Function
-      const { error, data } = await fetch('/functions/v1/answer-from-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Call the Supabase Edge Function using the JavaScript client
+      const { data, error } = await supabase.functions.invoke('answer-from-pdf', {
+        body: {
           question: questionText,
           pdfText: pdfText,
-        }),
-      }).then(res => res.json());
+        },
+      });
 
       if (error) {
-        throw new Error(error);
+        console.error('Error calling Edge Function:', error);
+        throw new Error(error.message);
       }
 
       // Update the question with the answer
