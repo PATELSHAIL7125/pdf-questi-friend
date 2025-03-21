@@ -82,6 +82,26 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         throw new Error(error.message);
       }
 
+      if (data.error) {
+        console.error('OpenAI API error:', data.error);
+        let errorMessage = 'Sorry, I encountered an error while analyzing the document.';
+        
+        // Provide more specific error messages based on the error type
+        if (data.error.includes('quota exceeded')) {
+          errorMessage = 'Sorry, the OpenAI API quota has been exceeded. Please try again later.';
+        } else if (data.error.includes('API key')) {
+          errorMessage = 'There is an issue with the OpenAI API key. Please contact the administrator.';
+        }
+        
+        // Update with error message
+        setQuestions((prev) => prev.map(q => 
+          q.id === tempId 
+            ? { ...q, answer: errorMessage, isLoading: false } 
+            : q
+        ));
+        return;
+      }
+
       // Update the question with the answer
       setQuestions((prev) => prev.map(q => 
         q.id === tempId 

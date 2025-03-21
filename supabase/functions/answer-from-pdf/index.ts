@@ -49,36 +49,66 @@ serve(async (req) => {
     console.log(`Processing question: ${question}`);
     console.log(`PDF text length: ${pdfText.length} characters`);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'You are a helpful assistant that answers questions based on PDF document content.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.3, // Lower temperature for more focused answers
-        max_tokens: 500,
-      }),
-    });
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant that answers questions based on PDF document content.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.3, // Lower temperature for more focused answers
+          max_tokens: 500,
+        }),
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('OpenAI API error details:', errorData);
+        
+        // Check for quota exceeded error
+        if (errorData.error && errorData.error.message && errorData.error.message.includes('quota')) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'OpenAI API quota exceeded. Please check your billing details or try again later.',
+              details: errorData.error.message
+            }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Generic API error
+        return new Response(
+          JSON.stringify({ 
+            error: 'Error communicating with OpenAI API',
+            details: errorData.error?.message || 'Unknown error'
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const data = await response.json();
+      const answer = data.choices[0].message.content.trim();
+
+      return new Response(
+        JSON.stringify({ answer }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (openAIError) {
+      console.error('OpenAI API request error:', openAIError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to process question with OpenAI API',
+          details: openAIError.message 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
-    const data = await response.json();
-    const answer = data.choices[0].message.content.trim();
-
-    return new Response(
-      JSON.stringify({ answer }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   } catch (error) {
     console.error('Error in answer-from-pdf function:', error);
     return new Response(
