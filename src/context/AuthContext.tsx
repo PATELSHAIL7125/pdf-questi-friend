@@ -55,7 +55,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      toast.error(error.message || 'Failed to login');
+      
+      // Improved error messages based on error code
+      if (error.code === 'email_not_confirmed') {
+        toast.error("Please check your email and confirm your account before logging in");
+      } else if (error.code === 'invalid_credentials') {
+        toast.error("Invalid email or password");
+      } else {
+        toast.error(error.message || 'Failed to login');
+      }
+      
       throw error;
     } finally {
       setIsLoading(false);
@@ -66,7 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setIsLoading(true);
       
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -78,6 +87,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (error) {
         throw error;
+      }
+      
+      // Check if email confirmation is required
+      if (data?.user && !data.user.confirmed_at) {
+        toast.success("Registration successful! Please check your email to confirm your account.");
+      } else {
+        toast.success("Registration successful!");
       }
     } catch (error: any) {
       console.error('Registration error:', error);
