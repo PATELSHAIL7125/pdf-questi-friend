@@ -8,7 +8,6 @@ import { useAuth } from '@/context/AuthContext';
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
