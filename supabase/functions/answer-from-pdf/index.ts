@@ -1,7 +1,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY') || '';
+const geminiApiKey = Deno.env.get('GEMINI_API_KEY') || '';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,15 +26,15 @@ serve(async (req) => {
       );
     }
 
-    if (!openAIApiKey || openAIApiKey === '') {
-      console.error('OpenAI API key is not configured');
+    if (!geminiApiKey || geminiApiKey === '') {
+      console.error('Gemini API key is not configured');
       return new Response(
-        JSON.stringify({ error: 'OpenAI API key is not configured' }),
+        JSON.stringify({ error: 'Gemini API key is not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create the prompt for OpenAI
+    // Create the prompt for Gemini
     const prompt = `
       You're answering a question about a PDF document. 
       First, analyze the document text and extract the relevant information.
@@ -50,42 +51,61 @@ serve(async (req) => {
     console.log(`PDF text length: ${pdfText.length} characters`);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      // Call Gemini 2.0 Flash API
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: 'You are a helpful assistant that answers questions based on PDF document content.' },
-            { role: 'user', content: prompt }
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: prompt
+                }
+              ]
+            }
           ],
-          temperature: 0.3, // Lower temperature for more focused answers
-          max_tokens: 500,
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 800,
+            topK: 40,
+            topP: 0.95
+          }
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('OpenAI API error details:', errorData);
+        console.error('Gemini API error details:', errorData);
         
-        // Check for quota exceeded error
-        if (errorData.error && errorData.error.message && errorData.error.message.includes('quota')) {
-          return new Response(
-            JSON.stringify({ 
-              error: 'OpenAI API quota exceeded. Please check your billing details or try again later.',
-              details: errorData.error.message
-            }),
-            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+        // Handle different types of errors
+        if (errorData.error && errorData.error.message) {
+          if (errorData.error.message.includes('quota')) {
+            return new Response(
+              JSON.stringify({ 
+                error: 'Gemini API quota exceeded. Please check your billing details or try again later.',
+                details: errorData.error.message
+              }),
+              { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          } else if (errorData.error.message.includes('API key')) {
+            return new Response(
+              JSON.stringify({ 
+                error: 'Invalid Gemini API key. Please check your API key and try again.',
+                details: errorData.error.message
+              }),
+              { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
         }
         
         // Generic API error
         return new Response(
           JSON.stringify({ 
-            error: 'Error communicating with OpenAI API',
+            error: 'Error communicating with Gemini API',
             details: errorData.error?.message || 'Unknown error'
           }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -93,18 +113,28 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      const answer = data.choices[0].message.content.trim();
+      
+      // Extract the answer from Gemini response format
+      let answer = "Sorry, I couldn't generate an answer from the document.";
+      
+      if (data.candidates && 
+          data.candidates.length > 0 && 
+          data.candidates[0].content &&
+          data.candidates[0].content.parts && 
+          data.candidates[0].content.parts.length > 0) {
+        answer = data.candidates[0].content.parts[0].text;
+      }
 
       return new Response(
         JSON.stringify({ answer }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    } catch (openAIError) {
-      console.error('OpenAI API request error:', openAIError);
+    } catch (geminiError) {
+      console.error('Gemini API request error:', geminiError);
       return new Response(
         JSON.stringify({ 
-          error: 'Failed to process question with OpenAI API',
-          details: openAIError.message 
+          error: 'Failed to process question with Gemini API',
+          details: geminiError.message 
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

@@ -83,14 +83,16 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       if (data.error) {
-        console.error('OpenAI API error:', data.error);
+        console.error('Gemini API error:', data.error);
         let errorMessage = 'Sorry, I encountered an error while analyzing the document.';
         
         // Provide more specific error messages based on the error type
         if (data.error.includes('quota exceeded')) {
-          errorMessage = 'Sorry, the OpenAI API quota has been exceeded. Please try again later.';
+          errorMessage = 'Sorry, the Gemini API quota has been exceeded. Please try again later.';
         } else if (data.error.includes('API key')) {
-          errorMessage = 'There is an issue with the OpenAI API key. Please contact the administrator.';
+          errorMessage = 'There is an issue with the Gemini API key. Please contact the administrator.';
+        } else if (data.error.includes('blocked')) {
+          errorMessage = 'The content of your document or question was flagged by AI content filters. Please try a different document or question.';
         }
         
         // Update with error message
