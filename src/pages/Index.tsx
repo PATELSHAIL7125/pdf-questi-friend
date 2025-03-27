@@ -7,7 +7,8 @@ import QuestionInput from '@/components/QuestionInput';
 import AnswerDisplay from '@/components/AnswerDisplay';
 import { PDFProvider, usePDF } from '@/context/PDFContext';
 import { Button } from '@/components/ui/button';
-import { FileUp } from 'lucide-react';
+import { FileUp, FilePresentation, FilePdf } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const IndexContent: React.FC = () => {
   const { pdfUrl, setPdfFile, setPdfUrl, setPdfText, setTotalPages, setCurrentPage, setQuestions } = usePDF();
@@ -28,6 +29,20 @@ const IndexContent: React.FC = () => {
         
         {!pdfUrl ? (
           <div className="my-12">
+            <div className="flex gap-4 mb-8 justify-center">
+              <Link to="/">
+                <Button variant="outline" className="flex items-center gap-2 px-6" size="lg">
+                  <FilePdf className="h-5 w-5" />
+                  PDF Upload
+                </Button>
+              </Link>
+              <Link to="/presentation">
+                <Button variant="outline" className="flex items-center gap-2 px-6" size="lg">
+                  <FilePresentation className="h-5 w-5" />
+                  PowerPoint Upload
+                </Button>
+              </Link>
+            </div>
             <PDFUploader />
           </div>
         ) : (
