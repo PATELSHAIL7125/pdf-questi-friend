@@ -25,6 +25,7 @@ interface PDFContextType {
   setCurrentPage: (page: number) => void;
   setTotalPages: (pages: number) => void;
   setIsAnalyzing: (analyzing: boolean) => void;
+  setQuestions: (questions: Question[]) => void;
   addQuestion: (question: string, answer: string) => void;
   askQuestion: (question: string) => Promise<void>;
 }
@@ -145,6 +146,7 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCurrentPage,
         setTotalPages,
         setIsAnalyzing,
+        setQuestions,
         addQuestion,
         askQuestion,
       }}

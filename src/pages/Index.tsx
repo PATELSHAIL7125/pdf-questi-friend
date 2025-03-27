@@ -6,9 +6,20 @@ import PDFViewer from '@/components/PDFViewer';
 import QuestionInput from '@/components/QuestionInput';
 import AnswerDisplay from '@/components/AnswerDisplay';
 import { PDFProvider, usePDF } from '@/context/PDFContext';
+import { Button } from '@/components/ui/button';
+import { FileUp } from 'lucide-react';
 
 const IndexContent: React.FC = () => {
-  const { pdfUrl } = usePDF();
+  const { pdfUrl, setPdfFile, setPdfUrl, setPdfText, setTotalPages, setCurrentPage, setQuestions } = usePDF();
+  
+  const handleUploadNew = () => {
+    setPdfFile(null);
+    setPdfUrl(null);
+    setPdfText(null);
+    setTotalPages(0);
+    setCurrentPage(1);
+    setQuestions([]);
+  };
   
   return (
     <div className="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 bg-gradient-to-b from-background to-secondary/30">
@@ -21,6 +32,16 @@ const IndexContent: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center">
+            <div className="w-full flex justify-end mb-4">
+              <Button 
+                variant="outline" 
+                onClick={handleUploadNew}
+                className="flex items-center gap-2"
+              >
+                <FileUp className="h-4 w-4" />
+                Upload New PDF
+              </Button>
+            </div>
             <PDFViewer />
             <QuestionInput />
             <AnswerDisplay />
