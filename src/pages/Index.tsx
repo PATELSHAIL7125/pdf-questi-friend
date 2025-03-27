@@ -11,7 +11,7 @@ const IndexContent: React.FC = () => {
   const { pdfUrl } = usePDF();
   
   return (
-    <div className="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 bg-background">
+    <div className="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 bg-gradient-to-b from-background to-secondary/30">
       <div className="w-full max-w-5xl">
         <Header />
         

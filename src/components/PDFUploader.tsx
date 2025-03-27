@@ -1,10 +1,11 @@
 
 import React, { useCallback, useState, useRef } from 'react';
-import { Upload, X, FileText } from 'lucide-react';
+import { Upload, X, FileText, FileUp, Book } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePDF } from '@/context/PDFContext';
 import { loadPdf, extractTextFromPdf } from '@/utils/pdfUtils';
 import { useToast } from '@/components/ui/use-toast';
+import { Card, CardContent } from '@/components/ui/card';
 
 const PDFUploader: React.FC = () => {
   const { toast } = useToast();
@@ -14,9 +15,11 @@ const PDFUploader: React.FC = () => {
     setPdfText, 
     setTotalPages, 
     setCurrentPage,
-    setIsAnalyzing 
+    setIsAnalyzing,
+    pdfFile
   } = usePDF();
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -66,6 +69,16 @@ const PDFUploader: React.FC = () => {
       setIsAnalyzing(true);
       setPdfFile(file);
       
+      // Simulate upload progress
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        setUploadProgress(progress);
+        if (progress >= 100) {
+          clearInterval(interval);
+        }
+      }, 100);
+      
       // Create a URL for the PDF file
       const fileUrl = URL.createObjectURL(file);
       setPdfUrl(fileUrl);
@@ -94,6 +107,7 @@ const PDFUploader: React.FC = () => {
       setPdfText(null);
     } finally {
       setIsAnalyzing(false);
+      setUploadProgress(0);
     }
   };
 
@@ -107,59 +121,110 @@ const PDFUploader: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center w-full animate-slide-up">
-      <input
-        ref={fileInputRef}
-        id="pdf-upload"
-        type="file"
-        accept="application/pdf"
-        onChange={handleFileInput}
-        className="hidden"
-      />
-      
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`
-          w-full max-w-md h-40 rounded-xl border-2 border-dashed 
-          flex flex-col items-center justify-center p-6 transition-all duration-200
-          ${isDragging 
-            ? 'border-primary bg-primary/5 scale-105' 
-            : 'border-border hover:border-primary/50 hover:bg-secondary/50'
-          }
-        `}
-      >
-        <Upload className={`w-8 h-8 mb-2 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
-        <p className="text-sm font-medium mb-1">Drag & drop your PDF here</p>
-        <p className="text-xs text-muted-foreground mb-3">or</p>
-        <Button 
-          variant="outline" 
-          className="button-transition hover:bg-primary hover:text-white"
-          onClick={handleBrowseClick}
-        >
-          <FileText className="mr-2 h-4 w-4" />
-          Browse files
-        </Button>
-      </div>
-      
-      {/* File info section - initially hidden, shown when a file is uploaded */}
-      <div className="w-full max-w-md mt-6 hidden">
-        <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-          <div className="flex items-center space-x-3">
-            <FileText className="h-5 w-5 text-primary" />
-            <div>
-              <p className="text-sm font-medium truncate w-48">document-name.pdf</p>
-              <p className="text-xs text-muted-foreground">2.4 MB • 24 pages</p>
+      <div className="w-full max-w-2xl mb-8">
+        <Card className="border-none shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-primary/20 to-background p-6 flex items-center justify-center">
+            <Book className="h-16 w-16 text-primary" />
+            <div className="ml-4 text-left">
+              <h2 className="text-2xl font-bold text-foreground">PDF Insight</h2>
+              <p className="text-muted-foreground">Upload your PDF to start analyzing</p>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={resetPdf}
-            className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          
+          <CardContent className="p-6">
+            <input
+              ref={fileInputRef}
+              id="pdf-upload"
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileInput}
+              className="hidden"
+            />
+            
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`
+                w-full h-48 rounded-xl border-2 border-dashed 
+                flex flex-col items-center justify-center p-6 transition-all duration-200
+                ${isDragging 
+                  ? 'border-primary bg-primary/5 scale-105' 
+                  : 'border-border hover:border-primary/50 hover:bg-secondary/50'
+                }
+              `}
+            >
+              {uploadProgress > 0 && uploadProgress < 100 ? (
+                <div className="w-full flex flex-col items-center">
+                  <div className="w-full max-w-xs bg-secondary h-2 rounded-full mb-2 overflow-hidden">
+                    <div 
+                      className="bg-primary h-full transition-all duration-200 ease-out" 
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Uploading {uploadProgress}%</p>
+                </div>
+              ) : (
+                <>
+                  <FileUp className={`w-12 h-12 mb-4 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <p className="text-lg font-medium mb-2">Drag & drop your PDF here</p>
+                  <p className="text-sm text-muted-foreground mb-4">or</p>
+                  <Button 
+                    size="lg"
+                    className="button-transition hover:bg-primary hover:text-white"
+                    onClick={handleBrowseClick}
+                  >
+                    <FileText className="mr-2 h-5 w-5" />
+                    Browse files
+                  </Button>
+                </>
+              )}
+            </div>
+            
+            {/* File details section - for showing more information and features */}
+            <div className="mt-6">
+              <div className="flex flex-col space-y-2">
+                <p className="text-sm text-muted-foreground">Supported file: PDF</p>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <FileText className="h-4 w-4 mr-1" />
+                  <span>Maximum file size: 10 MB</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Features highlights section */}
+      <div className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+        <div className="flex flex-col items-center p-4 rounded-lg bg-background/50 border border-border">
+          <div className="bg-primary/10 p-2 rounded-full mb-2">
+            <FileUp className="h-5 w-5 text-primary" />
+          </div>
+          <h3 className="text-sm font-medium">Upload PDF</h3>
+          <p className="text-xs text-center text-muted-foreground mt-1">Drag & drop or browse</p>
+        </div>
+        
+        <div className="flex flex-col items-center p-4 rounded-lg bg-background/50 border border-border">
+          <div className="bg-primary/10 p-2 rounded-full mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </div>
+          <h3 className="text-sm font-medium">Ask Questions</h3>
+          <p className="text-xs text-center text-muted-foreground mt-1">Get instant answers</p>
+        </div>
+        
+        <div className="flex flex-col items-center p-4 rounded-lg bg-background/50 border border-border">
+          <div className="bg-primary/10 p-2 rounded-full mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <h3 className="text-sm font-medium">Get Insights</h3>
+          <p className="text-xs text-center text-muted-foreground mt-1">Extract key information</p>
         </div>
       </div>
     </div>
