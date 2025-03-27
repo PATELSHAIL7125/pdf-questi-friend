@@ -3,7 +3,7 @@ import React from 'react';
 import Header from '@/components/Header';
 import PresentationUploader from '@/components/PresentationUploader';
 import { Button } from '@/components/ui/button';
-import { FilePdf, FilePresentation } from 'lucide-react';
+import { FileIcon, Presentation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PDFProvider } from '@/context/PDFContext';
 
@@ -17,13 +17,13 @@ const PresentationContent: React.FC = () => {
           <div className="flex gap-4 mb-8 justify-center">
             <Link to="/">
               <Button variant="outline" className="flex items-center gap-2 px-6" size="lg">
-                <FilePdf className="h-5 w-5" />
+                <FileIcon className="h-5 w-5" />
                 PDF Upload
               </Button>
             </Link>
             <Link to="/presentation">
               <Button variant="outline" className="flex items-center gap-2 px-6" size="lg">
-                <FilePresentation className="h-5 w-5" />
+                <Presentation className="h-5 w-5" />
                 PowerPoint Upload
               </Button>
             </Link>

@@ -1,6 +1,5 @@
-
 import React, { useCallback, useState, useRef } from 'react';
-import { Upload, FilePresentation, FileUp } from 'lucide-react';
+import { Upload, Presentation, FileUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
@@ -106,7 +105,7 @@ const PresentationUploader: React.FC = () => {
       <div className="w-full max-w-2xl mb-8">
         <Card className="border-none shadow-lg overflow-hidden">
           <div className="bg-gradient-to-r from-primary/20 to-background p-6 flex items-center justify-center">
-            <FilePresentation className="h-16 w-16 text-primary" />
+            <Presentation className="h-16 w-16 text-primary" />
             <div className="ml-4 text-left">
               <h2 className="text-2xl font-bold text-foreground">Presentation Insight</h2>
               <p className="text-muted-foreground">Upload your PowerPoint to start analyzing</p>
@@ -125,7 +124,7 @@ const PresentationUploader: React.FC = () => {
             
             {isUploaded ? (
               <div className="flex flex-col items-center p-6 border border-primary/20 rounded-xl">
-                <FilePresentation className="h-12 w-12 mb-4 text-primary" />
+                <Presentation className="h-12 w-12 mb-4 text-primary" />
                 <p className="text-lg font-medium mb-2">{fileName}</p>
                 <p className="text-sm text-muted-foreground mb-4">Uploaded successfully</p>
                 <div className="flex gap-3">
@@ -168,7 +167,7 @@ const PresentationUploader: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    <FilePresentation className={`w-12 h-12 mb-4 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <Presentation className={`w-12 h-12 mb-4 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
                     <p className="text-lg font-medium mb-2">Drag & drop your presentation here</p>
                     <p className="text-sm text-muted-foreground mb-4">or</p>
                     <Button 
@@ -188,7 +187,7 @@ const PresentationUploader: React.FC = () => {
               <div className="flex flex-col space-y-2">
                 <p className="text-sm text-muted-foreground">Supported files: PowerPoint (.ppt, .pptx)</p>
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <FilePresentation className="h-4 w-4 mr-1" />
+                  <Presentation className="h-4 w-4 mr-1" />
                   <span>Maximum file size: 10 MB</span>
                 </div>
               </div>
