@@ -9,6 +9,17 @@ const Header: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
+  // Get the user's name from metadata or fallback to email
+  const getUserDisplayName = () => {
+    if (!user) return '';
+    
+    // Try to get name from user metadata
+    const userName = user.user_metadata?.name;
+    
+    // Fallback to email or empty string
+    return userName || user.email || '';
+  };
+
   return (
     <header className="w-full py-4 px-6 flex items-center justify-between glass-panel rounded-xl mb-6 animate-fade-in">
       <div className="flex items-center space-x-2">
@@ -24,7 +35,7 @@ const Header: React.FC = () => {
         {isAuthenticated ? (
           <div className="flex items-center gap-3">
             <div className="text-sm font-medium hidden md:block">
-              {user?.name || user?.email}
+              {getUserDisplayName()}
             </div>
             <Button 
               variant="outline" 
