@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import Header from '@/components/Header';
 import PresentationUploader from '@/components/PresentationUploader';
 import PresentationViewer from '@/components/PresentationViewer';

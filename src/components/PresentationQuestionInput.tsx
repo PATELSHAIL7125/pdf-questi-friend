@@ -46,14 +46,14 @@ const PresentationQuestionInput: React.FC = () => {
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Ask a question about your presentation..."
           disabled={isPresentationAnswerLoading || !presentationText}
-          className="w-full h-14 pl-4 pr-16 rounded-xl border border-input 
+          className="w-full h-14 pl-4 pr-16 rounded-full border border-input 
                     bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 
                     transition-all duration-200 shadow-sm"
         />
         <Button
           type="submit"
           disabled={isPresentationAnswerLoading || !presentationText || !question.trim()}
-          className="absolute right-2 top-2 rounded-lg p-2 h-10 w-10 button-transition"
+          className="absolute right-2 top-2 rounded-full p-2 h-10 w-10 bg-primary text-white"
         >
           {isPresentationAnswerLoading ? (
             <Loader2 className="h-5 w-5 animate-spin" />
