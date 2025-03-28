@@ -6,13 +6,11 @@ import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { usePDF } from '@/context/PDFContext';
-import PresentationQuestionInput from './PresentationQuestionInput';
-import PresentationAnswerDisplay from './PresentationAnswerDisplay';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const PresentationUploader: React.FC = () => {
   const { toast } = useToast();
-  const { setPresentationFile, setPresentationText, presentationText } = usePDF();
+  const { setPresentationFile, setPresentationText } = usePDF();
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploaded, setIsUploaded] = useState(false);
@@ -64,7 +62,7 @@ const PresentationUploader: React.FC = () => {
       toast({
         title: "Not a PowerPoint file",
         description: "This doesn't appear to be a PowerPoint file (.ppt or .pptx). Results may vary.",
-        variant: "default" // Changed from "warning" to "default"
+        variant: "default"
       });
     }
 
@@ -81,6 +79,8 @@ const PresentationUploader: React.FC = () => {
           clearInterval(interval);
           setIsUploaded(true);
           
+          // Extract presentation content from the filename for now
+          // In a real implementation, we would parse the actual PPT file
           const presentationContent = extractPresentationContent(file.name);
           
           setPresentationText(presentationContent);
@@ -263,41 +263,7 @@ Slide 5: Conclusion
             </div>
           </div>
         </>
-      ) : (
-        <div className="w-full max-w-4xl">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-full flex justify-end mb-4">
-              <Button 
-                variant="outline" 
-                onClick={resetUpload}
-                className="flex items-center gap-2"
-              >
-                <FileUp className="h-4 w-4" />
-                Upload New Presentation
-              </Button>
-            </div>
-            
-            <Card className="w-full mb-6 overflow-hidden">
-              <CardContent className="p-6">
-                <div className="flex items-center mb-4">
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-3 flex-shrink-0">
-                    <Presentation className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-lg">{fileName}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Uploaded successfully • {new Date().toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <PresentationQuestionInput />
-          <PresentationAnswerDisplay />
-        </div>
-      )}
+      ) : null}
     </div>
   );
 };

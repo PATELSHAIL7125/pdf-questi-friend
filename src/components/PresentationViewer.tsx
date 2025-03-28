@@ -14,6 +14,21 @@ const PresentationViewer: React.FC = () => {
   const [totalSlides, setTotalSlides] = useState(0);
   const [presentationName, setPresentationName] = useState('');
   const [slideContent, setSlideContent] = useState('');
+  const [fileSize, setFileSize] = useState('');
+  const [uploadDate, setUploadDate] = useState('');
+  
+  useEffect(() => {
+    if (presentationFile) {
+      // Format the file size
+      const size = presentationFile.size < 1000000 
+        ? `${(presentationFile.size / 1024).toFixed(1)} KB` 
+        : `${(presentationFile.size / 1048576).toFixed(1)} MB`;
+      setFileSize(size);
+      
+      // Format the uploaded date
+      setUploadDate(new Date().toLocaleDateString());
+    }
+  }, [presentationFile]);
   
   useEffect(() => {
     if (presentationText) {
@@ -59,14 +74,6 @@ const PresentationViewer: React.FC = () => {
     }
   };
   
-  // Format the file size
-  const fileSize = presentationFile.size < 1000000 
-    ? `${(presentationFile.size / 1024).toFixed(1)} KB` 
-    : `${(presentationFile.size / 1048576).toFixed(1)} MB`;
-  
-  // Format the uploaded date
-  const uploadDate = new Date().toLocaleDateString();
-  
   const increaseZoom = () => {
     setZoomLevel(prev => Math.min(prev + 20, 200));
   };
@@ -104,6 +111,9 @@ const PresentationViewer: React.FC = () => {
           </div>
           
           <div className="rounded-lg border p-4 bg-secondary/30 mb-4">
+            <div className="text-lg font-medium mb-2">
+              Presentation content extracted:
+            </div>
             <div className="text-lg font-medium mb-2">{presentationName}</div>
             <div 
               className="p-6 bg-white border rounded-lg shadow-sm" 
@@ -141,7 +151,7 @@ const PresentationViewer: React.FC = () => {
             </div>
             
             <div className="text-sm">
-              Page {currentSlide} of {totalSlides}
+              Slide {currentSlide} of {totalSlides}
             </div>
             
             <Button
