@@ -40,7 +40,9 @@ const PresentationAnswerDisplay: React.FC = () => {
                   <span>Analyzing presentation...</span>
                 </div>
               ) : (
-                <p className="text-sm whitespace-pre-line">{qa.answer}</p>
+                <div className="text-sm whitespace-pre-line">
+                  {qa.answer}
+                </div>
               )}
             </div>
           </div>
