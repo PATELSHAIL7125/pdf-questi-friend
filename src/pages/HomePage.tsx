@@ -1,18 +1,18 @@
 
 import React from 'react';
 import { FileText, LogIn, User, FileUp } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';    // used for programmatic navigation
 import { Button } from "@/components/ui/button";
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';  // check user authentication status
 
 const HomePage: React.FC = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate();    {/* enable navigation between pages*/}
   const { isAuthenticated } = useAuth();
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Hero Section */}
+      {/* hero Section */}
       <section className="flex flex-col items-center justify-center px-4 py-20 bg-gradient-to-b from-primary/10 to-background min-h-[70vh]">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto text-center">   {/* title and logo*/}
           <div className="flex items-center justify-center mb-6">
             <FileText className="h-12 w-12 text-primary mr-3" />
             <h1 className="text-4xl font-bold tracking-tight">PDF Insight</h1>
@@ -27,7 +27,7 @@ const HomePage: React.FC = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
-            {isAuthenticated ? (
+            {isAuthenticated ? (  
               <Button 
                 size="lg" 
                 className="px-8 py-6 text-lg" 
