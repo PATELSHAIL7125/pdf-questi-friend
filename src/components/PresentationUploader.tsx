@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState, useRef } from 'react';
 import { Upload, Presentation, FileUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { usePDF } from '@/context/PDFContext';
 import PresentationQuestionInput from './PresentationQuestionInput';
 import PresentationAnswerDisplay from './PresentationAnswerDisplay';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const PresentationUploader: React.FC = () => {
   const { toast } = useToast();
@@ -15,6 +17,7 @@ const PresentationUploader: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploaded, setIsUploaded] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [showFormatWarning, setShowFormatWarning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -57,10 +60,11 @@ const PresentationUploader: React.FC = () => {
     const file = files[0];
     
     if (!allowedTypes.includes(file.type)) {
+      setShowFormatWarning(true);
       toast({
         title: "Not a PowerPoint file",
         description: "This doesn't appear to be a PowerPoint file (.ppt or .pptx). Results may vary.",
-        variant: "warning"
+        variant: "default" // Changed from "warning" to "default"
       });
     }
 
@@ -156,6 +160,15 @@ Slide 5: Conclusion
               </div>
               
               <CardContent className="p-6">
+                {showFormatWarning && (
+                  <Alert className="mb-4">
+                    <AlertTitle>File format notice</AlertTitle>
+                    <AlertDescription>
+                      This doesn't appear to be a PowerPoint file (.ppt or .pptx). Results may vary.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
                 <input
                   ref={fileInputRef}
                   id="presentation-upload"
