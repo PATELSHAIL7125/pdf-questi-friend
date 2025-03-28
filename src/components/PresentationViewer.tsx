@@ -1,21 +1,64 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePDF } from '@/context/PDFContext';
 import { FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import PresentationQuestionInput from './PresentationQuestionInput';
 import PresentationAnswerDisplay from './PresentationAnswerDisplay';
 import { Button } from '@/components/ui/button';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 const PresentationViewer: React.FC = () => {
   const { presentationFile, presentationText } = usePDF();
   const [zoomLevel, setZoomLevel] = useState(100);
+  const [currentSlide, setCurrentSlide] = useState(1);
+  const [totalSlides, setTotalSlides] = useState(0);
+  const [presentationName, setPresentationName] = useState('');
+  const [slideContent, setSlideContent] = useState('');
   
+  useEffect(() => {
+    if (presentationText) {
+      // Process presentation content
+      const lines = presentationText.split('\n');
+      const name = lines[0].replace('Presentation: ', '');
+      setPresentationName(name);
+      
+      // Count total slides
+      const slideCount = lines.filter(line => line.trim().startsWith('Slide')).length;
+      setTotalSlides(slideCount);
+      
+      // Update content for current slide
+      updateSlideContent(currentSlide, lines);
+    }
+  }, [presentationText, currentSlide]);
+  
+  // Early return with null if no presentation is loaded
   if (!presentationFile || !presentationText) {
     return null;
   }
 
+  const updateSlideContent = (slideNum: number, lines: string[]) => {
+    const slideMarker = `Slide ${slideNum}:`;
+    const nextSlideMarker = `Slide ${slideNum + 1}:`;
+    
+    let startIdx = -1;
+    let endIdx = lines.length;
+    
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes(slideMarker)) {
+        startIdx = i;
+      } else if (startIdx !== -1 && lines[i].includes(nextSlideMarker)) {
+        endIdx = i;
+        break;
+      }
+    }
+    
+    if (startIdx === -1) {
+      setSlideContent("Slide content not found");
+    } else {
+      setSlideContent(lines.slice(startIdx, endIdx).join('\n'));
+    }
+  };
+  
   // Format the file size
   const fileSize = presentationFile.size < 1000000 
     ? `${(presentationFile.size / 1024).toFixed(1)} KB` 
@@ -23,16 +66,6 @@ const PresentationViewer: React.FC = () => {
   
   // Format the uploaded date
   const uploadDate = new Date().toLocaleDateString();
-  
-  // Extract presentation content and divide into slides
-  const lines = presentationText.split('\n');
-  const presentationName = lines[0].replace('Presentation: ', '');
-  
-  // Count total slides by counting lines that start with "Slide"
-  const totalSlides = lines.filter(line => line.trim().startsWith('Slide')).length;
-  
-  // Extract slide number from the file name if possible (for demo purposes)
-  const [currentSlide, setCurrentSlide] = useState(1);
   
   const increaseZoom = () => {
     setZoomLevel(prev => Math.min(prev + 20, 200));
@@ -52,28 +85,6 @@ const PresentationViewer: React.FC = () => {
     if (currentSlide > 1) {
       setCurrentSlide(prev => prev - 1);
     }
-  };
-  
-  // Function to get current slide content
-  const getCurrentSlideContent = () => {
-    const slideMarker = `Slide ${currentSlide}:`;
-    const nextSlideMarker = `Slide ${currentSlide + 1}:`;
-    
-    let startIdx = -1;
-    let endIdx = lines.length;
-    
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes(slideMarker)) {
-        startIdx = i;
-      } else if (startIdx !== -1 && lines[i].includes(nextSlideMarker)) {
-        endIdx = i;
-        break;
-      }
-    }
-    
-    if (startIdx === -1) return "Slide content not found";
-    
-    return lines.slice(startIdx, endIdx).join('\n');
   };
 
   return (
@@ -103,7 +114,7 @@ const PresentationViewer: React.FC = () => {
                 whiteSpace: 'pre-wrap'
               }}
             >
-              {getCurrentSlideContent()}
+              {slideContent}
             </div>
           </div>
           
