@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { usePDF } from '@/context/PDFContext';
 import { useToast } from '@/components/ui/use-toast';
 
-const QuestionInput: React.FC = () => {
+const PresentationQuestionInput: React.FC = () => {
   const { toast } = useToast();
-  const { pdfText, askQuestion, isAnswerLoading } = usePDF();
+  const { presentationText, askPresentationQuestion, isPresentationAnswerLoading } = usePDF();
   const [question, setQuestion] = useState('');
   
   const handleQuestionSubmit = async (e: React.FormEvent) => {
@@ -15,17 +15,17 @@ const QuestionInput: React.FC = () => {
     
     if (!question.trim()) return;
     
-    if (!pdfText) {
+    if (!presentationText) {
       toast({
-        title: "No PDF loaded",
-        description: "Please upload a PDF before asking questions.",
+        title: "No presentation loaded",
+        description: "Please upload a PowerPoint file before asking questions.",
         variant: "destructive"
       });
       return;
     }
     
     try {
-      await askQuestion(question);
+      await askPresentationQuestion(question);
       setQuestion('');
     } catch (error) {
       console.error('Error processing question:', error);
@@ -38,24 +38,24 @@ const QuestionInput: React.FC = () => {
   };
   
   return (
-    <div className="w-full max-w-3xl mt-4 mb-6 animate-fade-in">
+    <div className="w-full max-w-4xl mt-4 mb-6 animate-fade-in">
       <form onSubmit={handleQuestionSubmit} className="relative">
         <input
           type="text"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask a question about your PDF..."
-          disabled={isAnswerLoading || !pdfText}
-          className="w-full h-14 pl-4 pr-16 rounded-xl border border-input 
+          placeholder="Ask a question about your presentation..."
+          disabled={isPresentationAnswerLoading || !presentationText}
+          className="w-full h-14 pl-4 pr-16 rounded-full border border-input 
                     bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 
                     transition-all duration-200 shadow-sm"
         />
         <Button
           type="submit"
-          disabled={isAnswerLoading || !pdfText || !question.trim()}
-          className="absolute right-2 top-2 rounded-lg p-2 h-10 w-10 button-transition"
+          disabled={isPresentationAnswerLoading || !presentationText || !question.trim()}
+          className="absolute right-2 top-2 rounded-full p-2 h-10 w-10 bg-primary text-white"
         >
-          {isAnswerLoading ? (
+          {isPresentationAnswerLoading ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
             <Send className="h-5 w-5" />
@@ -66,4 +66,4 @@ const QuestionInput: React.FC = () => {
   );
 };
 
-export default QuestionInput;
+export default PresentationQuestionInput;

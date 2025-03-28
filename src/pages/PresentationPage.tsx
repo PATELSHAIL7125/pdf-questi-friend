@@ -1,25 +1,19 @@
 
 import React from 'react';
 import Header from '@/components/Header';
-import PDFUploader from '@/components/PDFUploader';
-import PDFViewer from '@/components/PDFViewer';
-import QuestionInput from '@/components/QuestionInput';
-import AnswerDisplay from '@/components/AnswerDisplay';
-import { PDFProvider, usePDF } from '@/context/PDFContext';
+import PresentationUploader from '@/components/PresentationUploader';
+import PresentationViewer from '@/components/PresentationViewer';
 import { Button } from '@/components/ui/button';
-import { FileUp, Presentation, FileIcon } from 'lucide-react';
+import { FileIcon, Presentation, FileUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PDFProvider, usePDF } from '@/context/PDFContext';
 
-const IndexContent: React.FC = () => {
-  const { pdfUrl, setPdfFile, setPdfUrl, setPdfText, setTotalPages, setCurrentPage, setQuestions } = usePDF();
+const PresentationContent: React.FC = () => {
+  const { presentationFile, setPresentationFile, setPresentationText } = usePDF();
   
   const handleUploadNew = () => {
-    setPdfFile(null);
-    setPdfUrl(null);
-    setPdfText(null);
-    setTotalPages(0);
-    setCurrentPage(1);
-    setQuestions([]);
+    setPresentationFile(null);
+    setPresentationText(null);
   };
   
   return (
@@ -27,7 +21,7 @@ const IndexContent: React.FC = () => {
       <div className="w-full max-w-5xl">
         <Header />
         
-        {!pdfUrl ? (
+        {!presentationFile ? (
           <div className="my-12">
             <div className="flex gap-4 mb-8 justify-center">
               <Link to="/">
@@ -43,7 +37,7 @@ const IndexContent: React.FC = () => {
                 </Button>
               </Link>
             </div>
-            <PDFUploader />
+            <PresentationUploader />
           </div>
         ) : (
           <div className="flex flex-col items-center">
@@ -54,12 +48,10 @@ const IndexContent: React.FC = () => {
                 className="flex items-center gap-2"
               >
                 <FileUp className="h-4 w-4" />
-                Upload New PDF
+                Upload New Presentation
               </Button>
             </div>
-            <PDFViewer />
-            <QuestionInput />
-            <AnswerDisplay />
+            <PresentationViewer />
           </div>
         )}
       </div>
@@ -67,12 +59,12 @@ const IndexContent: React.FC = () => {
   );
 };
 
-const Index: React.FC = () => {
+const PresentationPage: React.FC = () => {
   return (
     <PDFProvider>
-      <IndexContent />
+      <PresentationContent />
     </PDFProvider>
   );
 };
 
-export default Index;
+export default PresentationPage;

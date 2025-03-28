@@ -4,16 +4,16 @@ import { MessageCircle, Loader2 } from 'lucide-react';
 import { usePDF } from '@/context/PDFContext';
 import { format } from 'date-fns';
 
-const AnswerDisplay: React.FC = () => {
-  const { questions } = usePDF();
+const PresentationAnswerDisplay: React.FC = () => {
+  const { presentationQuestions } = usePDF();
   
-  if (questions.length === 0) {
+  if (presentationQuestions.length === 0) {
     return null;
   }
   
   return (
-    <div className="w-full max-w-3xl space-y-4 mb-10 animate-fade-in">
-      {questions.map((qa) => (
+    <div className="w-full max-w-4xl space-y-4 mb-10 animate-fade-in">
+      {presentationQuestions.map((qa) => (
         <div key={qa.id} className="space-y-3">
           {/* Question */}
           <div className="flex items-start space-x-3">
@@ -33,14 +33,16 @@ const AnswerDisplay: React.FC = () => {
           
           {/* Answer */}
           <div className="flex items-start space-x-3 pl-11">
-            <div className="flex-1 glass-panel rounded-xl p-4">
+            <div className="flex-1 glass-panel rounded-xl p-4 bg-secondary/30 border">
               {qa.isLoading ? (
                 <div className="flex items-center space-x-2 text-sm">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Analyzing document...</span>
+                  <span>Analyzing presentation...</span>
                 </div>
               ) : (
-                <p className="text-sm whitespace-pre-line">{qa.answer}</p>
+                <div className="text-sm whitespace-pre-line">
+                  {qa.answer}
+                </div>
               )}
             </div>
           </div>
@@ -50,4 +52,4 @@ const AnswerDisplay: React.FC = () => {
   );
 };
 
-export default AnswerDisplay;
+export default PresentationAnswerDisplay;
