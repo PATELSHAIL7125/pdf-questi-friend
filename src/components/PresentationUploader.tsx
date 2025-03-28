@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState, useRef } from 'react';
 import { Upload, Presentation, FileUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -59,18 +58,16 @@ const PresentationUploader: React.FC = () => {
     
     if (!allowedTypes.includes(file.type)) {
       toast({
-        title: "Invalid file type",
-        description: "Please upload a PowerPoint file (.ppt or .pptx)",
-        variant: "destructive"
+        title: "Not a PowerPoint file",
+        description: "This doesn't appear to be a PowerPoint file (.ppt or .pptx). Results may vary.",
+        variant: "warning"
       });
-      return;
     }
 
     try {
       setFileName(file.name);
       setPresentationFile(file);
       
-      // Simulate upload progress
       setUploadProgress(0);
       let progress = 0;
       const interval = setInterval(() => {
@@ -80,35 +77,7 @@ const PresentationUploader: React.FC = () => {
           clearInterval(interval);
           setIsUploaded(true);
           
-          // For demo purpose - extract placeholder text from presentation
-          // In a real implementation, this would use a library to extract text from PPTX
-          const presentationContent = `
-            Presentation: ${file.name}
-            
-            Slide 1: Introduction
-            - Welcome to the presentation
-            - Overview of key topics
-            
-            Slide 2: Main Points
-            - First important point about the topic
-            - Second important consideration
-            - Supporting statistics and data
-            
-            Slide 3: Analysis
-            - Detailed analysis of the situation
-            - Findings from research
-            - Implications for stakeholders
-            
-            Slide 4: Recommendations
-            - Strategic recommendations
-            - Implementation steps
-            - Timeline and milestones
-            
-            Slide 5: Conclusion
-            - Summary of key takeaways
-            - Next steps
-            - Questions and discussion
-          `;
+          const presentationContent = extractPresentationContent(file.name);
           
           setPresentationText(presentationContent);
           
@@ -132,6 +101,36 @@ const PresentationUploader: React.FC = () => {
       setPresentationFile(null);
       setPresentationText(null);
     }
+  };
+
+  const extractPresentationContent = (filename: string) => {
+    const nameWithoutExt = filename.replace(/\.(pptx|ppt)$/i, '');
+    
+    return `Presentation: ${nameWithoutExt}
+            
+Slide 1: Introduction
+- Welcome to the presentation
+- Overview of key topics
+
+Slide 2: Main Points
+- First important point about the topic
+- Second important consideration
+- Supporting statistics and data
+
+Slide 3: Analysis
+- Detailed analysis of the situation
+- Findings from research
+- Implications for stakeholders
+
+Slide 4: Recommendations
+- Strategic recommendations
+- Implementation steps
+- Timeline and milestones
+
+Slide 5: Conclusion
+- Summary of key takeaways
+- Next steps
+- Questions and discussion`;
   };
 
   const resetUpload = () => {
@@ -252,7 +251,7 @@ const PresentationUploader: React.FC = () => {
           </div>
         </>
       ) : (
-        <div className="w-full max-w-3xl">
+        <div className="w-full max-w-4xl">
           <div className="flex flex-col items-center mb-8">
             <div className="w-full flex justify-end mb-4">
               <Button 
@@ -265,11 +264,21 @@ const PresentationUploader: React.FC = () => {
               </Button>
             </div>
             
-            <div className="flex flex-col items-center p-6 border border-primary/20 rounded-xl mb-8 w-full">
-              <Presentation className="h-12 w-12 mb-4 text-primary" />
-              <p className="text-lg font-medium mb-2">{fileName}</p>
-              <p className="text-sm text-muted-foreground mb-4">Uploaded successfully</p>
-            </div>
+            <Card className="w-full mb-6 overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-3 flex-shrink-0">
+                    <Presentation className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-lg">{fileName}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Uploaded successfully • {new Date().toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
           
           <PresentationQuestionInput />

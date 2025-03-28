@@ -38,7 +38,7 @@ const PresentationQuestionInput: React.FC = () => {
   };
   
   return (
-    <div className="w-full max-w-3xl mt-4 mb-6 animate-fade-in">
+    <div className="w-full max-w-4xl mt-4 mb-6 animate-fade-in">
       <form onSubmit={handleQuestionSubmit} className="relative">
         <input
           type="text"

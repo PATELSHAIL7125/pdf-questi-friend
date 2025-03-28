@@ -13,27 +13,35 @@ const PresentationViewer: React.FC = () => {
     return null;
   }
 
+  // Format the file size
+  const fileSize = presentationFile.size < 1000000 
+    ? `${(presentationFile.size / 1024).toFixed(1)} KB` 
+    : `${(presentationFile.size / 1048576).toFixed(1)} MB`;
+  
+  // Format the uploaded date
+  const uploadDate = new Date().toLocaleDateString();
+
   return (
     <div className="w-full flex flex-col items-center animate-fade-in">
-      <Card className="w-full max-w-3xl mb-6 overflow-hidden">
+      <Card className="w-full max-w-4xl mb-6 overflow-hidden">
         <CardContent className="p-6">
           <div className="flex items-center mb-4">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mr-3 flex-shrink-0">
-              <FileText className="h-5 w-5 text-primary" />
+            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-3 flex-shrink-0">
+              <FileText className="h-6 w-6 text-primary" />
             </div>
             <div>
               <h3 className="font-medium text-lg">{presentationFile.name}</h3>
               <p className="text-sm text-muted-foreground">
-                {(presentationFile.size / 1024).toFixed(1)} KB • Uploaded {new Date().toLocaleDateString()}
+                {fileSize} • Uploaded {uploadDate}
               </p>
             </div>
           </div>
           
           <div className="rounded-lg border p-4 bg-secondary/30">
             <p className="text-sm text-muted-foreground mb-2">Presentation content extracted:</p>
-            <div className="max-h-[200px] overflow-y-auto text-sm">
+            <div className="max-h-[300px] overflow-y-auto text-sm">
               {presentationText.split('\n').map((line, index) => (
-                <p key={index} className={line.trim() ? '' : 'h-2'}>
+                <p key={index} className={`${line.trim() ? '' : 'h-2'} ${line.includes('Slide') ? 'font-semibold mt-3' : ''}`}>
                   {line.trim() || ' '}
                 </p>
               ))}
