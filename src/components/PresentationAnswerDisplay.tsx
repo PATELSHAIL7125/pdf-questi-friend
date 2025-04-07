@@ -12,7 +12,7 @@ const PresentationAnswerDisplay: React.FC = () => {
   }
   
   return (
-    <div className="w-full max-w-3xl space-y-4 mb-10 animate-fade-in">
+    <div className="w-full max-w-4xl space-y-4 mb-10 animate-fade-in">
       {presentationQuestions.map((qa) => (
         <div key={qa.id} className="space-y-3">
           {/* Question */}
@@ -33,7 +33,7 @@ const PresentationAnswerDisplay: React.FC = () => {
           
           {/* Answer */}
           <div className="flex items-start space-x-3 pl-11">
-            <div className="flex-1 glass-panel rounded-xl p-4">
+            <div className="flex-1 glass-panel rounded-xl p-4 bg-secondary/30 border">
               {qa.isLoading ? (
                 <div className="flex items-center space-x-2 text-sm">
                   <Loader2 className="h-4 w-4 animate-spin" />
