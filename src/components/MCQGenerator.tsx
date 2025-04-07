@@ -1,14 +1,18 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { usePDF } from '@/context/PDFContext';
-import { Loader2, FileText, CheckCircle } from 'lucide-react';
+import { Loader2, FileText, CheckCircle, BookOpen, Code, Calculator } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 
 const MCQGenerator: React.FC = () => {
   const { pdfText, generateMCQs, isMCQGenerating, mcqSet } = usePDF();
+  const [numQuestions, setNumQuestions] = useState<number>(5);
+  const [questionType, setQuestionType] = useState<string>("auto");
 
   const handleGenerateMCQs = async () => {
-    await generateMCQs(5); // Generate 5 MCQs by default
+    await generateMCQs(numQuestions, questionType); 
   };
 
   if (!pdfText) {
@@ -34,6 +38,54 @@ const MCQGenerator: React.FC = () => {
       <p className="text-sm text-muted-foreground mt-2 mb-4">
         Generate multiple-choice questions based on your PDF content to test understanding.
       </p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Question Focus</label>
+          <Select 
+            value={questionType}
+            onValueChange={setQuestionType}
+            disabled={isMCQGenerating}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select focus" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">
+                <div className="flex items-center">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  <span>Auto-detect content</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="algorithm">
+                <div className="flex items-center">
+                  <Calculator className="h-4 w-4 mr-2" />
+                  <span>Algorithm Analysis</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="technical">
+                <div className="flex items-center">
+                  <Code className="h-4 w-4 mr-2" />
+                  <span>Technical Concepts</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-1">Number of Questions: {numQuestions}</label>
+          <Slider 
+            value={[numQuestions]} 
+            min={1}
+            max={10}
+            step={1}
+            onValueChange={(value) => setNumQuestions(value[0])}
+            disabled={isMCQGenerating}
+            className="my-4"
+          />
+        </div>
+      </div>
       
       <Button
         onClick={handleGenerateMCQs}

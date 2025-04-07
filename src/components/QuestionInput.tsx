@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Send, Loader2, BarChart3 } from 'lucide-react';
+import { Send, Loader2, BarChart3, LayoutList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePDF } from '@/context/PDFContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -10,11 +10,30 @@ const QuestionInput: React.FC = () => {
   const { pdfText, askQuestion, isAnswerLoading } = usePDF();
   const [question, setQuestion] = useState('');
   
-  // Detect if the question is about data visualization
-  const isDataVisualizationQuestion = (q: string): boolean => {
+  // Detect question types
+  const detectQuestionType = (q: string): { type: string, icon: React.ReactNode } => {
+    // Algorithm analysis detection
+    const algorithmKeywords = ['algorithm', 'complexity', 'time complexity', 'space complexity', 
+      'approach', 'greedy', 'kruskal', 'prim', 'dijkstra', 'dynamic programming', 'big o'];
+    
+    const isAlgorithmQuestion = algorithmKeywords.some(keyword => 
+      q.toLowerCase().includes(keyword));
+    
+    // Data visualization detection  
     const dataVizKeywords = ['data visual', 'visualization', 'chart', 'graph', 'plot', 'dashboard'];
-    return dataVizKeywords.some(keyword => q.toLowerCase().includes(keyword));
+    const isDataVizQuestion = dataVizKeywords.some(keyword => 
+      q.toLowerCase().includes(keyword));
+    
+    if (isAlgorithmQuestion) {
+      return { type: 'algorithm', icon: <LayoutList className="h-4 w-4 text-blue-500" /> };
+    } else if (isDataVizQuestion) {
+      return { type: 'visualization', icon: <BarChart3 className="h-4 w-4 text-primary" /> };
+    }
+    
+    return { type: 'general', icon: null };
   };
+  
+  const questionType = detectQuestionType(question);
   
   const handleQuestionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +51,7 @@ const QuestionInput: React.FC = () => {
     
     try {
       console.log('Submitting question:', question);
-      console.log('Is data visualization question:', isDataVisualizationQuestion(question));
+      console.log('Question type:', questionType.type);
       await askQuestion(question);
       setQuestion('');
     } catch (error) {
@@ -58,9 +77,9 @@ const QuestionInput: React.FC = () => {
                     bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 
                     transition-all duration-200 shadow-sm"
         />
-        {isDataVisualizationQuestion(question) && !isAnswerLoading && (
+        {questionType.type !== 'general' && !isAnswerLoading && (
           <div className="absolute top-2 right-14 bg-secondary/50 p-1 rounded-md">
-            <BarChart3 className="h-4 w-4 text-primary" />
+            {questionType.icon}
           </div>
         )}
         <Button

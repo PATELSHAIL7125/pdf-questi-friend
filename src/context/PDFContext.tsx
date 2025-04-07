@@ -57,7 +57,7 @@ interface PDFContextType {
   addPresentationQuestion: (question: string, answer: string) => void;
   askQuestion: (question: string) => Promise<void>;
   askPresentationQuestion: (question: string) => Promise<void>;
-  generateMCQs: (numQuestions?: number) => Promise<void>;
+  generateMCQs: (numQuestions?: number, questionType?: string) => Promise<void>;
   setUserAnswer: (questionIndex: number, answer: string) => void;
 }
 

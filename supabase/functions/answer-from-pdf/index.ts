@@ -34,7 +34,7 @@ serve(async (req) => {
       );
     }
 
-    // Check if it's a data visualization question
+    // Detect question type for customized prompting
     const isDataVisualizationQuestion = 
       question.toLowerCase().includes('data visual') || 
       question.toLowerCase().includes('visualization') || 
@@ -42,13 +42,46 @@ serve(async (req) => {
       question.toLowerCase().includes('graph') ||
       question.toLowerCase().includes('plot') ||
       question.toLowerCase().includes('dashboard');
+      
+    const isAlgorithmAnalysisQuestion = 
+      question.toLowerCase().includes('algorithm') || 
+      question.toLowerCase().includes('complexity') || 
+      question.toLowerCase().includes('time complexity') || 
+      question.toLowerCase().includes('space complexity') ||
+      question.toLowerCase().includes('approach') ||
+      question.toLowerCase().includes('greedy') ||
+      question.toLowerCase().includes('kruskal') ||
+      question.toLowerCase().includes('prim');
 
-    console.log(`Question type: ${isDataVisualizationQuestion ? 'Data Visualization' : 'General'}`);
+    console.log(`Question type: ${
+      isAlgorithmAnalysisQuestion ? 'Algorithm Analysis' : 
+      isDataVisualizationQuestion ? 'Data Visualization' : 'General'
+    }`);
     
     // Create the prompt for Gemini based on question type
     let prompt = '';
     
-    if (isDataVisualizationQuestion) {
+    if (isAlgorithmAnalysisQuestion) {
+      prompt = `
+        You're answering a question about algorithm analysis in a document.
+        First, analyze the document text to identify all information related to algorithm analysis.
+        
+        Document text:
+        ${pdfText.substring(0, 15000)} ${pdfText.length > 15000 ? '... [document truncated due to length]' : ''}
+        
+        Algorithm Analysis Question: ${question}
+        
+        In your response:
+        1. Explain the relevant algorithms mentioned (like Kruskal's, Prim's, Greedy approaches)
+        2. Discuss the time and space complexity details from the document
+        3. Compare different algorithmic approaches if mentioned
+        4. Explain any data structures mentioned in relation to these algorithms
+        5. Answer the specific question with detailed information from the document
+        
+        Format your response as a comprehensive academic answer with clear sections. Include tabular data if present in the document.
+        Be precise and detailed in your analysis. If the document doesn't contain specific information, explain what IS available.
+      `;
+    } else if (isDataVisualizationQuestion) {
       prompt = `
         You're answering a question about data visualization in a document.
         First, analyze the document text to identify all information related to data visualization.
@@ -76,7 +109,10 @@ serve(async (req) => {
         
         Question: ${question}
         
-        Provide a concise, informative answer based on the document content. If the document doesn't contain information to answer the question, say so clearly.
+        Provide a detailed and informative answer based solely on the document content.
+        If the document contains tables, charts, or structured data relevant to the question, describe them in detail.
+        If the document contains questions and answers, include the complete set of information.
+        If the document doesn't contain information to answer the question, say so clearly and explain what information the document DOES contain.
       `;
     }
 
@@ -84,7 +120,7 @@ serve(async (req) => {
     console.log(`PDF text length: ${pdfText.length} characters`);
 
     try {
-      // Call Gemini 2.0 Flash API (upgraded from 1.5-flash)
+      // Call Gemini 2.0 Flash API
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: {
@@ -102,8 +138,8 @@ serve(async (req) => {
             }
           ],
           generationConfig: {
-            temperature: isDataVisualizationQuestion ? 0.1 : 0.2, // Lower temperature for more precise data viz answers
-            maxOutputTokens: 1000, // Increased from 800 for more detailed responses
+            temperature: isAlgorithmAnalysisQuestion ? 0.1 : isDataVisualizationQuestion ? 0.1 : 0.2,
+            maxOutputTokens: 1500, // Increased for more detailed responses
             topK: 40,
             topP: 0.95
           }

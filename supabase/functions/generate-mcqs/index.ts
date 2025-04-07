@@ -17,7 +17,7 @@ serve(async (req) => {
 
   try {
     console.log("Generate MCQs function called");
-    const { pdfText, numQuestions } = await req.json();
+    const { pdfText, numQuestions, questionType } = await req.json();
 
     if (!pdfText) {
       return new Response(
@@ -35,7 +35,9 @@ serve(async (req) => {
     }
 
     const questionsToGenerate = numQuestions || 5;
-    console.log(`Generating ${questionsToGenerate} MCQs`);
+    const focusType = questionType || 'auto';
+    
+    console.log(`Generating ${questionsToGenerate} MCQs with focus: ${focusType}`);
     console.log(`PDF text length: ${pdfText.length} characters`);
 
     // Truncate document text if too long
@@ -44,18 +46,111 @@ serve(async (req) => {
       ? pdfText.substring(0, maxTextLength) + "... [document truncated due to length]" 
       : pdfText;
 
-    // Create prompt specifically for MCQ generation
-    const prompt = `
+    // Create prompt specifically for MCQ generation based on content type
+    let prompt = '';
+    
+    if (focusType === 'algorithm') {
+      // Algorithm-focused MCQs
+      prompt = `
+I have a document about algorithm analysis with the following content:
+
+${truncatedText}
+
+Please create ${questionsToGenerate} multiple-choice questions (MCQs) specifically focused on algorithm analysis topics such as:
+- Time and space complexity analysis
+- Algorithm approaches (greedy, dynamic programming, divide and conquer, etc.)
+- Comparison between different algorithms
+- Data structures used in the algorithms
+- Big O notation and efficiency
+
+For each question, provide:
+1. A clear, technically precise question based on algorithm information in the document
+2. Four answer options (A, B, C, D) with only one correct answer
+3. Indicate which option is the correct answer
+4. Provide a detailed explanation of why the answer is correct, with specific references to complexity analysis or algorithmic principles from the document
+
+Format your response as a JSON string with this structure:
+{
+  "questions": [
+    {
+      "question": "Question text here?",
+      "options": {
+        "A": "First option",
+        "B": "Second option",
+        "C": "Third option",
+        "D": "Fourth option"
+      },
+      "correctAnswer": "A",
+      "explanation": "Explanation why A is correct with reference to document"
+    },
+    ...more questions...
+  ]
+}
+
+Focus on creating challenging, technical questions that test deep understanding of algorithm concepts, implementation details, and performance characteristics presented in the document.
+If the document includes tables of time/space complexity, ensure questions reference this information accurately.
+`;
+    } else if (focusType === 'technical') {
+      // Technical concepts focused MCQs
+      prompt = `
+I have a technical document with the following content:
+
+${truncatedText}
+
+Please create ${questionsToGenerate} multiple-choice questions (MCQs) specifically focused on technical concepts such as:
+- Technical definitions and terminology
+- Implementation details 
+- System architecture or design
+- Technical processes or workflows
+- Mathematical or scientific concepts
+
+For each question, provide:
+1. A clear, technically precise question based on important technical information in the document
+2. Four answer options (A, B, C, D) with only one correct answer
+3. Indicate which option is the correct answer
+4. Provide a detailed explanation of why the answer is correct, with specific references to the technical concepts from the document
+
+Format your response as a JSON string with this structure:
+{
+  "questions": [
+    {
+      "question": "Question text here?",
+      "options": {
+        "A": "First option",
+        "B": "Second option",
+        "C": "Third option",
+        "D": "Fourth option"
+      },
+      "correctAnswer": "A",
+      "explanation": "Explanation why A is correct with reference to document"
+    },
+    ...more questions...
+  ]
+}
+
+Focus on creating technically rigorous questions that test accurate understanding of the content. Make sure all information is drawn directly from the document.
+`;
+    } else {
+      // Auto-detect content type
+      prompt = `
 I have a document with the following content:
 
 ${truncatedText}
 
-Please create ${questionsToGenerate} multiple-choice questions (MCQs) based on this document's content. 
+Please create ${questionsToGenerate} multiple-choice questions (MCQs) based on this document's content.
+
+First, analyze the document to determine its main subject matter (e.g., algorithm analysis, technical concepts, business, history, science, etc.).
+
+Then, create questions that are specifically tailored to the document's subject matter. For example:
+- If it's about algorithms, focus on complexity analysis, algorithm approaches, and implementation details
+- If it's about technical concepts, focus on definitions, implementations, and technical processes
+- If it's business content, focus on key business concepts, strategies, and examples
+
 For each question, provide:
 1. A clear question based on important information in the document
 2. Four answer options (A, B, C, D) with only one correct answer
 3. Indicate which option is the correct answer
-4. Provide a brief explanation of why the answer is correct, referencing specific information from the document
+4. Provide a detailed explanation of why the answer is correct, referencing specific information from the document
 
 Format your response as a JSON string with this structure:
 {
@@ -78,6 +173,7 @@ Format your response as a JSON string with this structure:
 Focus on creating questions that test understanding of the main concepts, facts, and ideas presented in the document.
 Make sure each question has a clear correct answer based on the document content.
 `;
+    }
 
     try {
       // Call Gemini 2.0 Flash API for MCQ generation
@@ -98,7 +194,7 @@ Make sure each question has a clear correct answer based on the document content
             }
           ],
           generationConfig: {
-            temperature: 0.2,
+            temperature: 0.1, // Lower temperature for more precise MCQs
             maxOutputTokens: 1500,
             topK: 40,
             topP: 0.95
