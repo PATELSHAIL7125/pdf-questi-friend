@@ -1,17 +1,21 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/Header';
 import PDFUploader from '@/components/PDFUploader';
 import PDFViewer from '@/components/PDFViewer';
 import QuestionInput from '@/components/QuestionInput';
 import AnswerDisplay from '@/components/AnswerDisplay';
+import MCQGenerator from '@/components/MCQGenerator';
+import MCQDisplay from '@/components/MCQDisplay';
 import { PDFProvider, usePDF } from '@/context/PDFContext';
 import { Button } from '@/components/ui/button';
-import { FileUp, Presentation, FileIcon } from 'lucide-react';
+import { FileUp, Presentation, FileIcon, MessageSquare, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const IndexContent: React.FC = () => {
-  const { pdfUrl, setPdfFile, setPdfUrl, setPdfText, setTotalPages, setCurrentPage, setQuestions } = usePDF();
+  const { pdfUrl, setPdfFile, setPdfUrl, setPdfText, setTotalPages, setCurrentPage, setQuestions, mcqSet } = usePDF();
+  const [activeTab, setActiveTab] = useState<string>("ask");
   
   const handleUploadNew = () => {
     setPdfFile(null);
@@ -58,8 +62,34 @@ const IndexContent: React.FC = () => {
               </Button>
             </div>
             <PDFViewer />
-            <QuestionInput />
-            <AnswerDisplay />
+            
+            <Tabs 
+              defaultValue="ask" 
+              value={activeTab} 
+              onValueChange={setActiveTab}
+              className="w-full max-w-3xl mt-6"
+            >
+              <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto mb-4">
+                <TabsTrigger value="ask" className="flex items-center gap-1">
+                  <MessageSquare className="h-4 w-4" />
+                  Ask Questions
+                </TabsTrigger>
+                <TabsTrigger value="mcq" className="flex items-center gap-1">
+                  <HelpCircle className="h-4 w-4" />
+                  MCQ Quiz
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="ask" className="mt-0">
+                <QuestionInput />
+                <AnswerDisplay />
+              </TabsContent>
+              
+              <TabsContent value="mcq" className="mt-0">
+                <MCQGenerator />
+                <MCQDisplay />
+              </TabsContent>
+            </Tabs>
           </div>
         )}
       </div>

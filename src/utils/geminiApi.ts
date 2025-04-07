@@ -90,3 +90,102 @@ Be specific and reference only information contained in the document. If the doc
     return 'Sorry, there was an error processing your question with the Gemini API. Please try again later.';
   }
 };
+
+/**
+ * Function to generate MCQs based on PDF content
+ * @param documentText - The extracted text from the PDF
+ * @param numQuestions - Number of MCQs to generate (default: 5)
+ * @returns JSON string containing MCQs with answers and explanations
+ */
+export const generateMCQsFromDocument = async (
+  documentText: string,
+  numQuestions: number = 5
+): Promise<string> => {
+  try {
+    // Get the generative model
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    
+    // Truncate document text if too long
+    const maxTextLength = 15000;
+    const truncatedText = documentText.length > maxTextLength 
+      ? documentText.substring(0, maxTextLength) + "... [document truncated due to length]" 
+      : documentText;
+    
+    // Create prompt specifically for MCQ generation
+    const prompt = `
+I have a document with the following content:
+
+${truncatedText}
+
+Please create ${numQuestions} multiple-choice questions (MCQs) based on this document's content. 
+For each question, provide:
+1. A clear question based on important information in the document
+2. Four answer options (A, B, C, D) with only one correct answer
+3. Indicate which option is the correct answer
+4. Provide a brief explanation of why the answer is correct, referencing specific information from the document
+
+Format your response as a JSON string with this structure:
+{
+  "questions": [
+    {
+      "question": "Question text here?",
+      "options": {
+        "A": "First option",
+        "B": "Second option",
+        "C": "Third option",
+        "D": "Fourth option"
+      },
+      "correctAnswer": "A",
+      "explanation": "Explanation why A is correct with reference to document"
+    },
+    ...more questions...
+  ]
+}
+
+Focus on creating questions that test understanding of the main concepts, facts, and ideas presented in the document. 
+Make sure each question has a clear correct answer based on the document content.
+`;
+
+    console.log('Generating MCQs with Gemini API, prompt length:', prompt.length);
+    
+    // Generate content with the prompt
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    console.log('Received MCQ response from Gemini API of length:', text.length);
+    
+    // Make sure the response is valid JSON
+    try {
+      // Extract JSON if it's wrapped in code blocks
+      let jsonText = text;
+      if (text.includes('```json')) {
+        jsonText = text.split('```json')[1].split('```')[0].trim();
+      } else if (text.includes('```')) {
+        jsonText = text.split('```')[1].split('```')[0].trim();
+      }
+      
+      // Parse and stringify to ensure valid JSON
+      JSON.parse(jsonText);
+      return jsonText;
+    } catch (jsonError) {
+      console.error('Error parsing JSON from Gemini response:', jsonError);
+      throw new Error('Failed to generate properly formatted MCQs. Please try again.');
+    }
+  } catch (error) {
+    console.error('Error generating MCQs with Gemini API:', error);
+    
+    // Provide more detailed error message based on the error type
+    if (error instanceof Error) {
+      if (error.message.includes('invalid API key')) {
+        throw new Error('Invalid Gemini API key. Please check your API key configuration.');
+      } else if (error.message.includes('quota')) {
+        throw new Error('Gemini API quota exceeded. Please try again later or check your billing status.');
+      } else if (error.message.includes('blocked')) {
+        throw new Error('The content was blocked by Gemini API safety systems. Please try a different document.');
+      }
+    }
+    
+    throw new Error('Failed to generate MCQs. Please try again later.');
+  }
+};

@@ -10,6 +10,24 @@ type Question = {
   isLoading?: boolean;
 };
 
+type MCQQuestion = {
+  question: string;
+  options: {
+    A: string;
+    B: string;
+    C: string;
+    D: string;
+  };
+  correctAnswer: string;
+  explanation: string;
+  userAnswer?: string;
+};
+
+type MCQSet = {
+  questions: MCQQuestion[];
+  generatedAt: Date;
+};
+
 interface PDFContextType {
   pdfFile: File | null;
   pdfUrl: string | null;
@@ -23,6 +41,8 @@ interface PDFContextType {
   presentationQuestions: Question[];
   isAnswerLoading: boolean;
   isPresentationAnswerLoading: boolean;
+  mcqSet: MCQSet | null;
+  isMCQGenerating: boolean;
   setPdfFile: (file: File | null) => void;
   setPdfUrl: (url: string | null) => void;
   setPdfText: (text: string | null) => void;
@@ -37,6 +57,8 @@ interface PDFContextType {
   addPresentationQuestion: (question: string, answer: string) => void;
   askQuestion: (question: string) => Promise<void>;
   askPresentationQuestion: (question: string) => Promise<void>;
+  generateMCQs: (numQuestions?: number) => Promise<void>;
+  setUserAnswer: (questionIndex: number, answer: string) => void;
 }
 
 const PDFContext = createContext<PDFContextType | undefined>(undefined);
@@ -54,6 +76,8 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [presentationQuestions, setPresentationQuestions] = useState<Question[]>([]);
   const [isAnswerLoading, setIsAnswerLoading] = useState<boolean>(false);
   const [isPresentationAnswerLoading, setIsPresentationAnswerLoading] = useState<boolean>(false);
+  const [mcqSet, setMCQSet] = useState<MCQSet | null>(null);
+  const [isMCQGenerating, setIsMCQGenerating] = useState<boolean>(false);
 
   const addQuestion = (questionText: string, answerText: string) => {
     const newQuestion: Question = {
@@ -229,6 +253,77 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const generateMCQs = async (numQuestions: number = 5) => {
+    if (!pdfText) return;
+    
+    setIsMCQGenerating(true);
+    
+    try {
+      console.log('Generating MCQs from PDF text');
+      // Call the Supabase Edge Function for MCQ generation
+      const { data, error } = await supabase.functions.invoke('generate-mcqs', {
+        body: {
+          pdfText: pdfText,
+          numQuestions: numQuestions,
+        },
+      });
+
+      if (error) {
+        console.error('Error calling MCQ generation function:', error);
+        throw new Error(error.message);
+      }
+
+      if (data.error) {
+        console.error('MCQ generation error:', data.error);
+        throw new Error(data.error);
+      }
+
+      if (!data.mcqData) {
+        throw new Error('Failed to generate MCQs');
+      }
+
+      // Parse the MCQ data
+      const mcqData = JSON.parse(data.mcqData);
+      
+      if (!mcqData.questions || !Array.isArray(mcqData.questions)) {
+        throw new Error('Invalid MCQ data format');
+      }
+      
+      // Set the MCQ data
+      setMCQSet({
+        questions: mcqData.questions,
+        generatedAt: new Date(),
+      });
+      
+      console.log(`Generated ${mcqData.questions.length} MCQs successfully`);
+    } catch (error) {
+      console.error('Error generating MCQs:', error);
+    } finally {
+      setIsMCQGenerating(false);
+    }
+  };
+
+  const setUserAnswer = (questionIndex: number, answer: string) => {
+    if (!mcqSet) return;
+    
+    setMCQSet(prev => {
+      if (!prev) return null;
+      
+      const updatedQuestions = [...prev.questions];
+      if (questionIndex >= 0 && questionIndex < updatedQuestions.length) {
+        updatedQuestions[questionIndex] = {
+          ...updatedQuestions[questionIndex],
+          userAnswer: answer
+        };
+      }
+      
+      return {
+        ...prev,
+        questions: updatedQuestions
+      };
+    });
+  };
+
   return (
     <PDFContext.Provider 
       value={{
@@ -244,6 +339,8 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         presentationQuestions,
         isAnswerLoading,
         isPresentationAnswerLoading,
+        mcqSet,
+        isMCQGenerating,
         setPdfFile,
         setPdfUrl,
         setPdfText,
@@ -258,6 +355,8 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addPresentationQuestion,
         askQuestion,
         askPresentationQuestion,
+        generateMCQs,
+        setUserAnswer,
       }}
     >
       {children}
