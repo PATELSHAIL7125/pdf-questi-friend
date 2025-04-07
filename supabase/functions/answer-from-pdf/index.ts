@@ -113,6 +113,7 @@ serve(async (req) => {
       }
 
       const data = await response.json();
+      console.log('Gemini API response:', JSON.stringify(data).substring(0, 200) + '...');
       
       // Extract the answer from Gemini response format
       let answer = "Sorry, I couldn't generate an answer from the document.";
@@ -147,3 +148,4 @@ serve(async (req) => {
     );
   }
 });
+

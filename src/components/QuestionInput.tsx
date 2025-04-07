@@ -25,6 +25,7 @@ const QuestionInput: React.FC = () => {
     }
     
     try {
+      console.log('Submitting question:', question);
       await askQuestion(question);
       setQuestion('');
     } catch (error) {
