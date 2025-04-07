@@ -34,25 +34,58 @@ serve(async (req) => {
       );
     }
 
-    // Create the prompt for Gemini
-    const prompt = `
-      You're answering a question about a PDF document. 
-      First, analyze the document text and extract the relevant information.
-      
-      Document text:
-      ${pdfText.substring(0, 15000)} ${pdfText.length > 15000 ? '... [document truncated due to length]' : ''}
-      
-      Question: ${question}
-      
-      Provide a concise, informative answer based on the document content. If the document doesn't contain information to answer the question, say so clearly.
-    `;
+    // Check if it's a data visualization question
+    const isDataVisualizationQuestion = 
+      question.toLowerCase().includes('data visual') || 
+      question.toLowerCase().includes('visualization') || 
+      question.toLowerCase().includes('chart') || 
+      question.toLowerCase().includes('graph') ||
+      question.toLowerCase().includes('plot') ||
+      question.toLowerCase().includes('dashboard');
+
+    console.log(`Question type: ${isDataVisualizationQuestion ? 'Data Visualization' : 'General'}`);
+    
+    // Create the prompt for Gemini based on question type
+    let prompt = '';
+    
+    if (isDataVisualizationQuestion) {
+      prompt = `
+        You're answering a question about data visualization in a document.
+        First, analyze the document text to identify all information related to data visualization.
+        
+        Document text:
+        ${pdfText.substring(0, 15000)} ${pdfText.length > 15000 ? '... [document truncated due to length]' : ''}
+        
+        Data Visualization Question: ${question}
+        
+        In your response:
+        1. Identify all data visualization tools, libraries, or skills mentioned
+        2. Explain how these visualization tools are being used according to the document
+        3. Include specific details about data visualization techniques or projects mentioned
+        4. If relevant, explain the context in which data visualization is mentioned
+        
+        Be comprehensive but concise. If the document doesn't contain specific information, explain what IS available.
+      `;
+    } else {
+      prompt = `
+        You're answering a question about a PDF document. 
+        First, analyze the document text and extract the relevant information.
+        
+        Document text:
+        ${pdfText.substring(0, 15000)} ${pdfText.length > 15000 ? '... [document truncated due to length]' : ''}
+        
+        Question: ${question}
+        
+        Provide a concise, informative answer based on the document content. If the document doesn't contain information to answer the question, say so clearly.
+      `;
+    }
 
     console.log(`Processing question: ${question}`);
     console.log(`PDF text length: ${pdfText.length} characters`);
 
     try {
-      // Call Gemini 2.0 Flash API
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+      // Call Gemini 2.0 Flash API (upgraded from 1.5-flash)
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,8 +102,8 @@ serve(async (req) => {
             }
           ],
           generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 800,
+            temperature: isDataVisualizationQuestion ? 0.1 : 0.2, // Lower temperature for more precise data viz answers
+            maxOutputTokens: 1000, // Increased from 800 for more detailed responses
             topK: 40,
             topP: 0.95
           }
@@ -148,4 +181,3 @@ serve(async (req) => {
     );
   }
 });
-

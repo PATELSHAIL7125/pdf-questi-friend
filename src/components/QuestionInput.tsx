@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePDF } from '@/context/PDFContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -9,6 +9,12 @@ const QuestionInput: React.FC = () => {
   const { toast } = useToast();
   const { pdfText, askQuestion, isAnswerLoading } = usePDF();
   const [question, setQuestion] = useState('');
+  
+  // Detect if the question is about data visualization
+  const isDataVisualizationQuestion = (q: string): boolean => {
+    const dataVizKeywords = ['data visual', 'visualization', 'chart', 'graph', 'plot', 'dashboard'];
+    return dataVizKeywords.some(keyword => q.toLowerCase().includes(keyword));
+  };
   
   const handleQuestionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +32,7 @@ const QuestionInput: React.FC = () => {
     
     try {
       console.log('Submitting question:', question);
+      console.log('Is data visualization question:', isDataVisualizationQuestion(question));
       await askQuestion(question);
       setQuestion('');
     } catch (error) {
@@ -51,6 +58,11 @@ const QuestionInput: React.FC = () => {
                     bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 
                     transition-all duration-200 shadow-sm"
         />
+        {isDataVisualizationQuestion(question) && !isAnswerLoading && (
+          <div className="absolute top-2 right-14 bg-secondary/50 p-1 rounded-md">
+            <BarChart3 className="h-4 w-4 text-primary" />
+          </div>
+        )}
         <Button
           type="submit"
           disabled={isAnswerLoading || !pdfText || !question.trim()}

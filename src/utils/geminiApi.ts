@@ -17,11 +17,40 @@ export const queryGeminiAboutDocument = async (
   question: string
 ): Promise<string> => {
   try {
-    // Get the generative model (Gemini 2.0 Flash)
+    // Get the generative model (now using Gemini 2.0 Flash for better performance)
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-    // Create a context-rich prompt that includes both the document content and question
-    const prompt = `
+    // Check if the question is related to data visualization
+    const isDataVisualizationQuestion = question.toLowerCase().includes('data visual') || 
+                                        question.toLowerCase().includes('visualization') || 
+                                        question.toLowerCase().includes('chart') || 
+                                        question.toLowerCase().includes('graph') ||
+                                        question.toLowerCase().includes('plot') ||
+                                        question.toLowerCase().includes('dashboard');
+
+    // Create a context-rich prompt with specific instructions for data visualization questions
+    let prompt = '';
+    
+    if (isDataVisualizationQuestion) {
+      prompt = `
+I have a document with the following content:
+
+${documentText}
+
+The user is asking about data visualization: "${question}"
+
+Please provide a detailed and helpful answer based on this document content. 
+1. Identify and explain all data visualization tools, libraries, or skills mentioned in the document
+2. Explain how these visualization tools are being used according to the document
+3. Include specific details about data visualization techniques or projects mentioned
+4. If relevant, explain the context in which data visualization is mentioned (e.g., in a resume, project description, etc.)
+5. Be comprehensive but concise in your explanation
+
+If the document doesn't contain the specific information to answer this question, please explicitly state what information is available in the document and what is missing.
+`;
+    } else {
+      // Standard prompt for non-visualization questions
+      prompt = `
 I have a document with the following content:
 
 ${documentText}
@@ -29,10 +58,12 @@ ${documentText}
 Based on this document content only, please answer the following question:
 ${question}
 
-If the document doesn't contain information to answer this question, please state that clearly.
+Be specific and reference only information contained in the document. If the document doesn't contain information to answer this question, please state that clearly.
 `;
+    }
 
     console.log('Querying Gemini API with prompt of length:', prompt.length);
+    console.log('Question category:', isDataVisualizationQuestion ? 'Data Visualization' : 'General');
     
     // Generate content with the prompt
     const result = await model.generateContent(prompt);
@@ -59,4 +90,3 @@ If the document doesn't contain information to answer this question, please stat
     return 'Sorry, there was an error processing your question with the Gemini API. Please try again later.';
   }
 };
-
