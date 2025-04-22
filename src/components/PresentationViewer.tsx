@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { usePDF } from '@/context/PDFContext';
 import { FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
@@ -18,13 +19,18 @@ const PresentationViewer: React.FC = () => {
   useEffect(() => {
     if (presentationText) {
       // Process presentation content
-      const lines = presentationText.split('\n');
-      const name = lines[0].replace('Presentation: ', '');
+      const lines = presentationText.split('\n\n');
+      
+      // Extract presentation name
+      const firstLine = lines[0];
+      const name = firstLine.replace('Presentation: ', '');
       setPresentationName(name);
       
       // Count total slides
       const slideCount = lines.filter(line => line.trim().startsWith('Slide')).length;
       setTotalSlides(slideCount);
+      
+      console.log(`Presentation has ${slideCount} slides`);
       
       // Update content for current slide
       updateSlideContent(currentSlide, lines);
@@ -38,24 +44,14 @@ const PresentationViewer: React.FC = () => {
 
   const updateSlideContent = (slideNum: number, lines: string[]) => {
     const slideMarker = `Slide ${slideNum}:`;
-    const nextSlideMarker = `Slide ${slideNum + 1}:`;
     
-    let startIdx = -1;
-    let endIdx = lines.length;
+    // Find the slide content in the extracted text
+    const slideData = lines.find(line => line.startsWith(slideMarker));
     
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes(slideMarker)) {
-        startIdx = i;
-      } else if (startIdx !== -1 && lines[i].includes(nextSlideMarker)) {
-        endIdx = i;
-        break;
-      }
-    }
-    
-    if (startIdx === -1) {
-      setSlideContent("Slide content not found");
+    if (slideData) {
+      setSlideContent(slideData);
     } else {
-      setSlideContent(lines.slice(startIdx, endIdx).join('\n'));
+      setSlideContent(`${slideMarker}\nSlide content not found. Try uploading the presentation again or asking questions about the presentation using Gemini backup.`);
     }
   };
   
@@ -163,4 +159,3 @@ const PresentationViewer: React.FC = () => {
 };
 
 export default PresentationViewer;
-
