@@ -55,8 +55,8 @@ interface PDFContextType {
   setPresentationQuestions: (questions: Question[]) => void;
   addQuestion: (question: string, answer: string) => void;
   addPresentationQuestion: (question: string, answer: string) => void;
-  askQuestion: (question: string) => Promise<void>;
-  askPresentationQuestion: (question: string) => Promise<void>;
+  askQuestion: (question: string, useGeminiBackup?: boolean) => Promise<void>;
+  askPresentationQuestion: (question: string, useGeminiBackup?: boolean) => Promise<void>;
   generateMCQs: (numQuestions?: number, questionType?: string) => Promise<void>;
   setUserAnswer: (questionIndex: number, answer: string) => void;
 }
@@ -101,7 +101,7 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setPresentationQuestions((prev) => [newQuestion, ...prev]);
   };
 
-  const askQuestion = async (questionText: string) => {
+  const askQuestion = async (questionText: string, useGeminiBackup: boolean = false) => {
     if (!pdfText) return;
     
     // Add the question with a loading state
@@ -123,6 +123,7 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         body: {
           question: questionText,
           pdfText: pdfText,
+          useGeminiBackup: useGeminiBackup
         },
       });
 
@@ -177,7 +178,7 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const askPresentationQuestion = async (questionText: string) => {
+  const askPresentationQuestion = async (questionText: string, useGeminiBackup: boolean = false) => {
     if (!presentationText) return;
     
     // Add the question with a loading state
@@ -199,6 +200,7 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         body: {
           question: questionText,
           pdfText: presentationText, // We're reusing the same function but with presentation text
+          useGeminiBackup: useGeminiBackup
         },
       });
 

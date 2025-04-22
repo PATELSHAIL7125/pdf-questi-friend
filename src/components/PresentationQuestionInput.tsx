@@ -1,14 +1,16 @@
 
 import React, { useState } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePDF } from '@/context/PDFContext';
 import { useToast } from '@/components/ui/use-toast';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const PresentationQuestionInput: React.FC = () => {
   const { toast } = useToast();
   const { presentationText, askPresentationQuestion, isPresentationAnswerLoading } = usePDF();
   const [question, setQuestion] = useState('');
+  const [useGeminiBackup, setUseGeminiBackup] = useState(true);
   
   const handleQuestionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +28,8 @@ const PresentationQuestionInput: React.FC = () => {
     
     try {
       console.log('Submitting presentation question:', question);
-      await askPresentationQuestion(question);
+      console.log('Use Gemini backup:', useGeminiBackup);
+      await askPresentationQuestion(question, useGeminiBackup);
       setQuestion('');
     } catch (error) {
       console.error('Error processing presentation question:', error);
@@ -51,6 +54,24 @@ const PresentationQuestionInput: React.FC = () => {
                     bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 
                     transition-all duration-200 shadow-sm"
         />
+        <div className="absolute right-14 top-2 flex items-center space-x-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                type="button" 
+                variant={useGeminiBackup ? "default" : "outline"}
+                size="icon"
+                className="h-10 w-10 rounded-lg"
+                onClick={() => setUseGeminiBackup(!useGeminiBackup)}
+              >
+                <BookOpen className={`h-5 w-5 ${useGeminiBackup ? 'text-white' : 'text-muted-foreground'}`} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {useGeminiBackup ? "Using Gemini backup (if presentation doesn't have info)" : "Using presentation content only"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
         <Button
           type="submit"
           disabled={isPresentationAnswerLoading || !presentationText || !question.trim()}

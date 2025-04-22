@@ -1,14 +1,16 @@
 
 import React, { useState } from 'react';
-import { Send, Loader2, BarChart3, LayoutList } from 'lucide-react';
+import { Send, Loader2, BarChart3, LayoutList, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePDF } from '@/context/PDFContext';
 import { useToast } from '@/components/ui/use-toast';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const QuestionInput: React.FC = () => {
   const { toast } = useToast();
   const { pdfText, askQuestion, isAnswerLoading } = usePDF();
   const [question, setQuestion] = useState('');
+  const [useGeminiBackup, setUseGeminiBackup] = useState(true);
   
   // Detect question types
   const detectQuestionType = (q: string): { type: string, icon: React.ReactNode } => {
@@ -52,7 +54,8 @@ const QuestionInput: React.FC = () => {
     try {
       console.log('Submitting question:', question);
       console.log('Question type:', questionType.type);
-      await askQuestion(question);
+      console.log('Use Gemini backup:', useGeminiBackup);
+      await askQuestion(question, useGeminiBackup);
       setQuestion('');
     } catch (error) {
       console.error('Error processing question:', error);
@@ -82,6 +85,24 @@ const QuestionInput: React.FC = () => {
             {questionType.icon}
           </div>
         )}
+        <div className="absolute right-14 top-2 flex items-center space-x-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                type="button" 
+                variant={useGeminiBackup ? "default" : "outline"}
+                size="icon"
+                className="h-10 w-10 rounded-lg"
+                onClick={() => setUseGeminiBackup(!useGeminiBackup)}
+              >
+                <BookOpen className={`h-5 w-5 ${useGeminiBackup ? 'text-white' : 'text-muted-foreground'}`} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {useGeminiBackup ? "Using Gemini backup (if PDF doesn't have info)" : "Using PDF content only"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
         <Button
           type="submit"
           disabled={isAnswerLoading || !pdfText || !question.trim()}

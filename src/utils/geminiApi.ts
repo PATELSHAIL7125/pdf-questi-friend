@@ -10,11 +10,13 @@ const genAI = new GoogleGenerativeAI('AIzaSyBklc71iuVgSkT6wc38suj3xdMH8f_9oMQ');
  * Function to query the Gemini API with document content
  * @param documentText - The extracted text from the PDF or PowerPoint file
  * @param question - The user's question about the document
+ * @param useGeminiBackup - Whether to use Gemini for information not in the document
  * @returns The response from Gemini API
  */
 export const queryGeminiAboutDocument = async (
   documentText: string,
-  question: string
+  question: string,
+  useGeminiBackup: boolean = false
 ): Promise<string> => {
   try {
     // Get the generative model (now using Gemini 2.0 Flash for better performance)
@@ -28,7 +30,14 @@ export const queryGeminiAboutDocument = async (
                                         question.toLowerCase().includes('plot') ||
                                         question.toLowerCase().includes('dashboard');
 
-    // Create a context-rich prompt with specific instructions for data visualization questions
+    // Check if the question is related to algorithm analysis
+    const isAlgorithmQuestion = question.toLowerCase().includes('algorithm') || 
+                                question.toLowerCase().includes('complexity') || 
+                                question.toLowerCase().includes('time complexity') || 
+                                question.toLowerCase().includes('approach') || 
+                                question.toLowerCase().includes('big o');
+
+    // Create a context-rich prompt with specific instructions
     let prompt = '';
     
     if (isDataVisualizationQuestion) {
@@ -46,24 +55,52 @@ Please provide a detailed and helpful answer based on this document content.
 4. If relevant, explain the context in which data visualization is mentioned (e.g., in a resume, project description, etc.)
 5. Be comprehensive but concise in your explanation
 
-If the document doesn't contain the specific information to answer this question, please explicitly state what information is available in the document and what is missing.
-`;
-    } else {
-      // Standard prompt for non-visualization questions
+${useGeminiBackup ? 
+  "If the document doesn't contain the specific information to answer this question, please provide a helpful response based on your knowledge about data visualization, but clearly indicate which parts are not from the document." :
+  "If the document doesn't contain the specific information to answer this question, please explicitly state what information is available in the document and what is missing."
+}`;
+    } else if (isAlgorithmQuestion) {
       prompt = `
 I have a document with the following content:
 
 ${documentText}
 
-Based on this document content only, please answer the following question:
+The user is asking about algorithm analysis: "${question}"
+
+Please provide a detailed and helpful answer based on this document content.
+1. Identify and explain all algorithms and computational approaches mentioned in the document
+2. Detail any time or space complexity analysis found in the document
+3. Explain algorithm implementations, optimizations, or comparisons mentioned
+4. If the document discusses Big O notation or efficiency, summarize those sections
+5. Be precise and technical in your explanation
+
+${useGeminiBackup ? 
+  "If the document doesn't contain the specific information to answer this question, please provide a helpful response based on your knowledge about algorithms and computational complexity, but clearly indicate which parts are not from the document." :
+  "If the document doesn't contain the specific information to answer this question, please explicitly state what information is available in the document and what is missing."
+}`;
+    } else {
+      // Standard prompt for non-specialized questions
+      prompt = `
+I have a document with the following content:
+
+${documentText}
+
+Based on this document content, please answer the following question:
 ${question}
 
-Be specific and reference only information contained in the document. If the document doesn't contain information to answer this question, please state that clearly.
-`;
+Be specific and reference only information contained in the document. 
+
+${useGeminiBackup ? 
+  "If the document doesn't contain information to answer this question, please provide a helpful response based on your general knowledge, but clearly indicate which parts of your answer are not from the document." :
+  "If the document doesn't contain information to answer this question, please state that clearly."
+}`;
     }
 
     console.log('Querying Gemini API with prompt of length:', prompt.length);
-    console.log('Question category:', isDataVisualizationQuestion ? 'Data Visualization' : 'General');
+    console.log('Question category:', 
+      isAlgorithmQuestion ? 'Algorithm Analysis' : 
+      isDataVisualizationQuestion ? 'Data Visualization' : 'General');
+    console.log('Using Gemini backup:', useGeminiBackup);
     
     // Generate content with the prompt
     const result = await model.generateContent(prompt);
@@ -189,3 +226,4 @@ Make sure each question has a clear correct answer based on the document content
     throw new Error('Failed to generate MCQs. Please try again later.');
   }
 };
+

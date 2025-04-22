@@ -17,7 +17,7 @@ serve(async (req) => {
 
   try {
     console.log("Function called");
-    const { question, pdfText } = await req.json();
+    const { question, pdfText, useGeminiBackup } = await req.json();
 
     if (!question || !pdfText) {
       return new Response(
@@ -57,6 +57,7 @@ serve(async (req) => {
       isAlgorithmAnalysisQuestion ? 'Algorithm Analysis' : 
       isDataVisualizationQuestion ? 'Data Visualization' : 'General'
     }`);
+    console.log(`Using Gemini backup: ${useGeminiBackup ? 'Yes' : 'No'}`);
     
     // Create the prompt for Gemini based on question type
     let prompt = '';
@@ -79,7 +80,12 @@ serve(async (req) => {
         5. Answer the specific question with detailed information from the document
         
         Format your response as a comprehensive academic answer with clear sections. Include tabular data if present in the document.
-        Be precise and detailed in your analysis. If the document doesn't contain specific information, explain what IS available.
+        Be precise and detailed in your analysis. 
+        
+        ${useGeminiBackup ? 
+          "If the document doesn't contain specific information to answer this question, provide a helpful response based on your knowledge about algorithms and computation theory, but clearly indicate which parts of your answer are not from the document." :
+          "If the document doesn't contain specific information, explain what IS available in the document."
+        }
       `;
     } else if (isDataVisualizationQuestion) {
       prompt = `
@@ -97,7 +103,12 @@ serve(async (req) => {
         3. Include specific details about data visualization techniques or projects mentioned
         4. If relevant, explain the context in which data visualization is mentioned
         
-        Be comprehensive but concise. If the document doesn't contain specific information, explain what IS available.
+        Be comprehensive but concise. 
+        
+        ${useGeminiBackup ? 
+          "If the document doesn't contain specific information to answer this question, provide a helpful response based on your knowledge about data visualization, but clearly indicate which parts of your answer are not from the document." :
+          "If the document doesn't contain specific information, explain what IS available in the document."
+        }
       `;
     } else {
       prompt = `
@@ -109,10 +120,14 @@ serve(async (req) => {
         
         Question: ${question}
         
-        Provide a detailed and informative answer based solely on the document content.
+        Provide a detailed and informative answer based on the document content.
         If the document contains tables, charts, or structured data relevant to the question, describe them in detail.
         If the document contains questions and answers, include the complete set of information.
-        If the document doesn't contain information to answer the question, say so clearly and explain what information the document DOES contain.
+        
+        ${useGeminiBackup ? 
+          "If the document doesn't contain information to answer this question, provide a helpful response based on your general knowledge, but clearly indicate which parts of your answer are not from the document." :
+          "If the document doesn't contain information to answer this question, say so clearly and explain what information the document DOES contain."
+        }
       `;
     }
 
