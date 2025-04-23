@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import PresentationQuestionInput from './PresentationQuestionInput';
 import PresentationAnswerDisplay from './PresentationAnswerDisplay';
 import { Button } from '@/components/ui/button';
-
+import { generateSlidePreview } from '@/utils/api/auth/pptxUtils';
 
 const PresentationViewer: React.FC = () => {
   const { presentationFile, presentationText } = usePDF();
@@ -15,6 +15,8 @@ const PresentationViewer: React.FC = () => {
   const [totalSlides, setTotalSlides] = useState(0);
   const [presentationName, setPresentationName] = useState('');
   const [slideContent, setSlideContent] = useState('');
+  const [slideDataUrl, setSlideDataUrl] = useState<string>('');
+  const [slideMap, setSlideMap] = useState<Map<number, string>>(new Map());
   
   useEffect(() => {
     if (presentationText) {
@@ -32,8 +34,19 @@ const PresentationViewer: React.FC = () => {
       
       console.log(`Presentation has ${slideCount} slides`);
       
+      // Create a map of slide numbers to content
+      const newSlideMap = new Map<number, string>();
+      lines.forEach(line => {
+        const slideMatch = line.match(/^Slide (\d+):/);
+        if (slideMatch) {
+          const slideNum = parseInt(slideMatch[1]);
+          newSlideMap.set(slideNum, line);
+        }
+      });
+      setSlideMap(newSlideMap);
+      
       // Update content for current slide
-      updateSlideContent(currentSlide, lines);
+      updateSlideContent(currentSlide, newSlideMap);
     }
   }, [presentationText, currentSlide]);
   
@@ -42,16 +55,18 @@ const PresentationViewer: React.FC = () => {
     return null;
   }
 
-  const updateSlideContent = (slideNum: number, lines: string[]) => {
-    const slideMarker = `Slide ${slideNum}:`;
+  const updateSlideContent = (slideNum: number, slideContentMap: Map<number, string>) => {
+    const content = slideContentMap.get(slideNum);
     
-    // Find the slide content in the extracted text
-    const slideData = lines.find(line => line.startsWith(slideMarker));
-    
-    if (slideData) {
-      setSlideContent(slideData);
+    if (content) {
+      setSlideContent(content);
+      // Generate the slide preview image
+      const dataUrl = generateSlidePreview(slideNum, content);
+      setSlideDataUrl(dataUrl);
     } else {
-      setSlideContent(`${slideMarker}\nSlide content not found. Try uploading the presentation again or asking questions about the presentation using Gemini backup.`);
+      const fallbackContent = `Slide ${slideNum}:\nSlide content not found.`;
+      setSlideContent(fallbackContent);
+      setSlideDataUrl(generateSlidePreview(slideNum, fallbackContent));
     }
   };
   
@@ -101,16 +116,34 @@ const PresentationViewer: React.FC = () => {
           
           <div className="rounded-lg border p-4 bg-secondary/30 mb-4">
             <div className="text-lg font-medium mb-2">{presentationName}</div>
-            <div 
-              className="p-6 bg-white border rounded-lg shadow-sm" 
-              style={{ 
-                fontSize: `${zoomLevel}%`,
-                transition: 'all 0.2s ease',
-                minHeight: '300px',
-                whiteSpace: 'pre-wrap'
-              }}
-            >
-              {slideContent}
+            <div className="flex flex-col items-center">
+              {/* Slide preview image */}
+              <div 
+                className="w-full border rounded-lg shadow-sm overflow-hidden bg-white mb-4"
+                style={{ 
+                  maxWidth: `${zoomLevel}%`,
+                  transition: 'all 0.2s ease',
+                  margin: '0 auto'
+                }}
+              >
+                <img 
+                  src={slideDataUrl} 
+                  alt={`Slide ${currentSlide}`}
+                  className="w-full h-auto"
+                />
+              </div>
+              
+              {/* Slide text content (can be hidden if desired) */}
+              <div 
+                className="p-4 bg-white border rounded-lg shadow-sm w-full mt-2" 
+                style={{ 
+                  fontSize: `${zoomLevel * 0.9}%`,
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'pre-wrap'
+                }}
+              >
+                {slideContent}
+              </div>
             </div>
           </div>
           

@@ -68,8 +68,10 @@ const PresentationQuestionInput: React.FC = () => {
                   <BookOpen className={`h-5 w-5 ${useGeminiBackup ? 'text-white' : 'text-muted-foreground'}`} />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
-                {useGeminiBackup ? "Using Gemini backup (if presentation doesn't have info)" : "Using presentation content only"}
+              <TooltipContent side="top" className="max-w-[250px]">
+                {useGeminiBackup ? 
+                  "AI Assist ON: If your presentation doesn't contain the answer, Gemini will provide additional information" : 
+                  "AI Assist OFF: Only using information found in your presentation slides"}
               </TooltipContent>
             </Tooltip>
           </div>
