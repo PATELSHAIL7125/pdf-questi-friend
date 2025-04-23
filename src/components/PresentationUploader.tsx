@@ -7,8 +7,8 @@ import { Link } from 'react-router-dom';
 import { usePDF } from '@/context/PDFContext';
 import PresentationQuestionInput from './PresentationQuestionInput';
 import PresentationAnswerDisplay from './PresentationAnswerDisplay';
-import { extractPresentationText } from '@/utils/api/auth/pptxUtils'; // Adjust the import path as necessary
-import { supabase } from '@/lib/supabase';
+import { extractPresentationText } from '@/utils/api/auth/pptxUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 const PresentationUploader: React.FC = () => {
   const { toast } = useToast();
@@ -71,7 +71,6 @@ const PresentationUploader: React.FC = () => {
       setFileName(file.name);
       setPresentationFile(file);
       
-      // Track the upload in the database
       const { error: uploadError } = await supabase
         .from('user_uploads')
         .insert({
@@ -83,7 +82,6 @@ const PresentationUploader: React.FC = () => {
         console.error('Error tracking upload:', uploadError);
       }
       
-      // Simulate upload progress
       setUploadProgress(0);
       let progress = 0;
       const interval = setInterval(async () => {
@@ -93,7 +91,6 @@ const PresentationUploader: React.FC = () => {
           clearInterval(interval);
           setIsUploaded(true);
           
-          // Extract text from presentation
           const presentationContent = await extractPresentationText(file);
           setPresentationText(presentationContent);
           
