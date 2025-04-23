@@ -53,9 +53,8 @@ const PresentationUploader: React.FC = () => {
     'application/vnd.openxmlformats-officedocument.presentationml.presentation'
   ];
 
-  const handleFiles = async (files: FileList) => {
+  const handleFiles = async (files) => {
     if (files.length === 0) return;
-
     const file = files[0];
     
     if (!allowedTypes.includes(file.type)) {
@@ -71,15 +70,20 @@ const PresentationUploader: React.FC = () => {
       setFileName(file.name);
       setPresentationFile(file);
       
-      const { error: uploadError } = await supabase
-        .from('user_uploads')
-        .insert({
-          file_name: file.name,
-          file_type: 'ppt',
-        });
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { error: uploadError } = await supabase
+          .from('user_uploads')
+          .insert({
+            file_name: file.name,
+            file_type: 'ppt',
+            user_id: user.id
+          });
 
-      if (uploadError) {
-        console.error('Error tracking upload:', uploadError);
+        if (uploadError) {
+          console.error('Error tracking upload:', uploadError);
+        }
       }
       
       setUploadProgress(0);

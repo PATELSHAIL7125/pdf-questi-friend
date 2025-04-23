@@ -3,6 +3,8 @@ import React from 'react';
 import Header from '@/components/Header';
 import PresentationUploader from '@/components/PresentationUploader';
 import PresentationViewer from '@/components/PresentationViewer';
+import MCQGenerator from '@/components/MCQGenerator';
+import MCQDisplay from '@/components/MCQDisplay';
 import { Button } from '@/components/ui/button';
 import { FileIcon, Presentation, FileUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -54,6 +56,8 @@ const PresentationContent: React.FC = () => {
               </Button>
             </div>
             <PresentationViewer />
+            <MCQGenerator />
+            <MCQDisplay />
           </div>
         )}
       </div>
