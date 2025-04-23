@@ -8,6 +8,7 @@ import { usePDF } from '@/context/PDFContext';
 import PresentationQuestionInput from './PresentationQuestionInput';
 import PresentationAnswerDisplay from './PresentationAnswerDisplay';
 import { extractPresentationText } from '@/utils/api/auth/pptxUtils'; // Adjust the import path as necessary
+import { supabase } from '@/lib/supabase';
 
 const PresentationUploader: React.FC = () => {
   const { toast } = useToast();
@@ -69,6 +70,18 @@ const PresentationUploader: React.FC = () => {
     try {
       setFileName(file.name);
       setPresentationFile(file);
+      
+      // Track the upload in the database
+      const { error: uploadError } = await supabase
+        .from('user_uploads')
+        .insert({
+          file_name: file.name,
+          file_type: 'ppt',
+        });
+
+      if (uploadError) {
+        console.error('Error tracking upload:', uploadError);
+      }
       
       // Simulate upload progress
       setUploadProgress(0);

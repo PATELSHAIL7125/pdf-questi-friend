@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Header from '@/components/Header';
 import PresentationUploader from '@/components/PresentationUploader';
@@ -7,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { FileIcon, Presentation, FileUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PDFProvider, usePDF } from '@/context/PDFContext';
+import RecentUploads from '@/components/RecentUploads';
 
 const PresentationContent: React.FC = () => {
   const { presentationFile, setPresentationFile, setPresentationText } = usePDF();
@@ -38,6 +38,7 @@ const PresentationContent: React.FC = () => {
               </Link>
             </div>
             <PresentationUploader />
+            <RecentUploads />
           </div>
         ) : (
           <div className="flex flex-col items-center">
