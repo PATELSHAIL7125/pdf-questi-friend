@@ -59,74 +59,84 @@ serve(async (req) => {
     }`);
     console.log(`Using Gemini backup: ${useGeminiBackup ? 'Yes' : 'No'}`);
     
-    // Create the prompt for Gemini based on question type
+    // Enhanced prompt engineering for better quality answers
     let prompt = '';
     
     if (isAlgorithmAnalysisQuestion) {
       prompt = `
-        You're answering a question about algorithm analysis in a document.
-        First, analyze the document text to identify all information related to algorithm analysis.
+        You are an expert computer science educator. Analyze the document and provide a comprehensive, well-structured answer about algorithms.
         
-        Document text:
+        Document content:
         ${pdfText.substring(0, 15000)} ${pdfText.length > 15000 ? '... [document truncated due to length]' : ''}
         
-        Algorithm Analysis Question: ${question}
+        User Question: ${question}
         
-        In your response:
-        1. Explain the relevant algorithms mentioned (like Kruskal's, Prim's, Greedy approaches)
-        2. Discuss the time and space complexity details from the document
-        3. Compare different algorithmic approaches if mentioned
-        4. Explain any data structures mentioned in relation to these algorithms
-        5. Answer the specific question with detailed information from the document
+        Please provide a detailed, educational response following these guidelines:
+        1. Structure your answer with clear sections and numbered points
+        2. Explain algorithms mentioned (Kruskal's, Prim's, Greedy approaches, etc.) with step-by-step breakdowns
+        3. Include time and space complexity analysis with Big O notation
+        4. Compare different algorithmic approaches when relevant
+        5. Provide practical examples or applications
+        6. Use simple, clear language without unnecessary jargon
         
-        Format your response as a comprehensive academic answer with clear sections. Include tabular data if present in the document.
-        Be precise and detailed in your analysis. 
+        Format your response as plain text without markdown symbols. Use numbered lists and clear paragraph breaks for readability.
         
         ${useGeminiBackup ? 
-          "If the document doesn't contain specific information to answer this question, provide a helpful response based on your knowledge about algorithms and computation theory, but clearly indicate which parts of your answer are not from the document." :
-          "If the document doesn't contain specific information, explain what IS available in the document."
+          "If the document lacks specific information, supplement with your knowledge while clearly distinguishing between document content and additional explanations." :
+          "Base your answer strictly on the document content. If information is missing, clearly state what is and isn't available in the document."
         }
       `;
     } else if (isDataVisualizationQuestion) {
       prompt = `
-        You're answering a question about data visualization in a document.
-        First, analyze the document text to identify all information related to data visualization.
+        You are a data visualization expert. Analyze the document and provide comprehensive insights about data visualization concepts.
         
-        Document text:
+        Document content:
         ${pdfText.substring(0, 15000)} ${pdfText.length > 15000 ? '... [document truncated due to length]' : ''}
         
-        Data Visualization Question: ${question}
+        User Question: ${question}
         
-        In your response:
-        1. Identify all data visualization tools, libraries, or skills mentioned
-        2. Explain how these visualization tools are being used according to the document
-        3. Include specific details about data visualization techniques or projects mentioned
-        4. If relevant, explain the context in which data visualization is mentioned
+        Please provide a detailed response following these guidelines:
+        1. Identify all data visualization tools, libraries, and frameworks mentioned
+        2. Explain the purpose and applications of each visualization technique
+        3. Describe the data types and use cases for different chart types
+        4. Include best practices for effective data presentation
+        5. Mention any specific datasets or examples from the document
+        6. Provide practical recommendations
         
-        Be comprehensive but concise. 
+        Format your response as plain text without markdown symbols. Use numbered lists and clear sections for better readability.
         
         ${useGeminiBackup ? 
-          "If the document doesn't contain specific information to answer this question, provide a helpful response based on your knowledge about data visualization, but clearly indicate which parts of your answer are not from the document." :
-          "If the document doesn't contain specific information, explain what IS available in the document."
+          "If the document lacks specific information, provide helpful insights based on your expertise while clearly indicating which parts are not from the document." :
+          "Focus strictly on what's available in the document and clearly explain any limitations."
         }
       `;
     } else {
       prompt = `
-        You're answering a question about a PDF document. 
-        First, analyze the document text and extract the relevant information.
+        You are a knowledgeable assistant specializing in document analysis. Provide a comprehensive, well-structured answer based on the document content.
         
-        Document text:
+        Document content:
         ${pdfText.substring(0, 15000)} ${pdfText.length > 15000 ? '... [document truncated due to length]' : ''}
         
-        Question: ${question}
+        User Question: ${question}
         
-        Provide a detailed and informative answer based on the document content.
-        If the document contains tables, charts, or structured data relevant to the question, describe them in detail.
-        If the document contains questions and answers, include the complete set of information.
+        Please follow these guidelines for your response:
+        1. Provide a clear, well-organized answer with logical flow
+        2. Include all relevant details from the document
+        3. Structure information with numbered points or clear paragraphs
+        4. Explain technical terms when necessary
+        5. Include specific examples, data, or quotes from the document
+        6. Summarize key findings at the end if appropriate
+        
+        Important formatting rules:
+        - Use plain text format without markdown symbols
+        - Do not use asterisks (*) for emphasis or bullet points
+        - Use numbered lists (1., 2., 3.) instead of bullet points
+        - Use clear paragraph breaks for readability
+        - Avoid special characters that might cause formatting issues
         
         ${useGeminiBackup ? 
-          "If the document doesn't contain information to answer this question, provide a helpful response based on your general knowledge, but clearly indicate which parts of your answer are not from the document." :
-          "If the document doesn't contain information to answer this question, say so clearly and explain what information the document DOES contain."
+          "If the document doesn't contain sufficient information, provide helpful context based on your knowledge, but clearly distinguish between document content and additional information." :
+          "Base your answer strictly on the document content. If specific information is missing, clearly state what is available and what is not."
         }
       `;
     }
@@ -135,7 +145,7 @@ serve(async (req) => {
     console.log(`PDF text length: ${pdfText.length} characters`);
 
     try {
-      // Call Gemini 2.0 Flash API
+      // Call Gemini 2.0 Flash API with enhanced configuration
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: {
@@ -153,11 +163,30 @@ serve(async (req) => {
             }
           ],
           generationConfig: {
-            temperature: isAlgorithmAnalysisQuestion ? 0.1 : isDataVisualizationQuestion ? 0.1 : 0.2,
-            maxOutputTokens: 1500, // Increased for more detailed responses
+            temperature: 0.3, // Slightly higher for more natural responses
+            maxOutputTokens: 2000, // Increased for more detailed responses
             topK: 40,
-            topP: 0.95
-          }
+            topP: 0.9,
+            candidateCount: 1
+          },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            }
+          ]
         }),
       });
 
@@ -199,7 +228,7 @@ serve(async (req) => {
       const data = await response.json();
       console.log('Gemini API response:', JSON.stringify(data).substring(0, 200) + '...');
       
-      // Extract the answer from Gemini response format
+      // Extract and clean the answer from Gemini response
       let answer = "Sorry, I couldn't generate an answer from the document.";
       
       if (data.candidates && 
@@ -207,7 +236,22 @@ serve(async (req) => {
           data.candidates[0].content &&
           data.candidates[0].content.parts && 
           data.candidates[0].content.parts.length > 0) {
-        answer = data.candidates[0].content.parts[0].text;
+        
+        let rawAnswer = data.candidates[0].content.parts[0].text;
+        
+        // Clean up formatting issues
+        answer = rawAnswer
+          // Remove markdown formatting
+          .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold markdown
+          .replace(/\*([^*]+)\*/g, '$1') // Remove italic markdown
+          .replace(/^[\s]*\*[\s]*/gm, '') // Remove asterisk bullet points at line start
+          .replace(/^[\s]*-[\s]*/gm, '') // Remove dash bullet points at line start
+          .replace(/```[^`]*```/g, '') // Remove code blocks
+          .replace(/`([^`]+)`/g, '$1') // Remove inline code formatting
+          // Improve line breaks and spacing
+          .replace(/\n{3,}/g, '\n\n') // Replace multiple line breaks with double
+          .replace(/\r\n/g, '\n') // Normalize line endings
+          .trim(); // Remove leading/trailing whitespace
       }
 
       return new Response(
