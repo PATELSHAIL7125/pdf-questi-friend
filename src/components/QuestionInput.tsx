@@ -4,7 +4,7 @@ import { Send, Loader2, BarChart3, LayoutList, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePDF } from '@/context/PDFContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 const QuestionInput: React.FC = () => {
   const { toast } = useToast();
@@ -40,7 +40,14 @@ const QuestionInput: React.FC = () => {
   const handleQuestionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!question.trim()) return;
+    if (!question.trim()) {
+      toast({
+        title: "Empty question",
+        description: "Please enter a question before submitting.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (!pdfText) {
       toast({
@@ -55,8 +62,14 @@ const QuestionInput: React.FC = () => {
       console.log('Submitting question:', question);
       console.log('Question type:', questionType.type);
       console.log('Use Gemini backup:', useGeminiBackup);
+      
       await askQuestion(question, useGeminiBackup);
       setQuestion('');
+      
+      toast({
+        title: "Question submitted",
+        description: "Processing your question...",
+      });
     } catch (error) {
       console.error('Error processing question:', error);
       toast({
@@ -67,55 +80,85 @@ const QuestionInput: React.FC = () => {
     }
   };
   
+  const toggleGeminiBackup = () => {
+    setUseGeminiBackup(!useGeminiBackup);
+    console.log('Toggled Gemini backup to:', !useGeminiBackup);
+  };
+  
   return (
-    <div className="w-full max-w-3xl mt-4 mb-6 animate-fade-in">
-      <form onSubmit={handleQuestionSubmit} className="relative">
-        <input
-          type="text"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask a question about your PDF..."
-          disabled={isAnswerLoading || !pdfText}
-          className="w-full h-14 pl-4 pr-16 rounded-xl border border-input 
-                    bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 
-                    transition-all duration-200 shadow-sm"
-        />
-        {questionType.type !== 'general' && !isAnswerLoading && (
-          <div className="absolute top-2 right-14 bg-secondary/50 p-1 rounded-md">
-            {questionType.icon}
-          </div>
-        )}
-        <div className="absolute right-14 top-2 flex items-center space-x-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                type="button" 
-                variant={useGeminiBackup ? "default" : "outline"}
-                size="icon"
-                className="h-10 w-10 rounded-lg"
-                onClick={() => setUseGeminiBackup(!useGeminiBackup)}
-              >
-                <BookOpen className={`h-5 w-5 ${useGeminiBackup ? 'text-white' : 'text-muted-foreground'}`} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {useGeminiBackup ? "Using Gemini backup (if PDF doesn't have info)" : "Using PDF content only"}
-            </TooltipContent>
-          </Tooltip>
-        </div>
-        <Button
-          type="submit"
-          disabled={isAnswerLoading || !pdfText || !question.trim()}
-          className="absolute right-2 top-2 rounded-lg p-2 h-10 w-10 button-transition"
-        >
-          {isAnswerLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Send className="h-5 w-5" />
+    <TooltipProvider>
+      <div className="w-full max-w-3xl mt-4 mb-6 animate-fade-in">
+        <form onSubmit={handleQuestionSubmit} className="relative">
+          <input
+            type="text"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Ask a question about your PDF..."
+            disabled={isAnswerLoading || !pdfText}
+            className="w-full h-14 pl-4 pr-28 rounded-xl border border-input 
+                      bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 
+                      transition-all duration-200 shadow-sm"
+          />
+          {questionType.type !== 'general' && !isAnswerLoading && (
+            <div className="absolute top-2 right-20 bg-secondary/50 p-1 rounded-md">
+              {questionType.icon}
+            </div>
           )}
-        </Button>
-      </form>
-    </div>
+          <div className="absolute right-14 top-2 flex items-center space-x-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  type="button" 
+                  variant={useGeminiBackup ? "default" : "outline"}
+                  size="icon"
+                  className={`h-10 w-10 rounded-lg transition-all duration-200 ${
+                    useGeminiBackup 
+                      ? 'bg-primary text-primary-foreground shadow-sm' 
+                      : 'bg-background border-2 text-muted-foreground hover:text-foreground'
+                  }`}
+                  onClick={toggleGeminiBackup}
+                  disabled={isAnswerLoading}
+                >
+                  <BookOpen className={`h-5 w-5 ${
+                    useGeminiBackup ? 'text-primary-foreground' : 'text-muted-foreground'
+                  }`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="text-sm max-w-48">
+                  {useGeminiBackup 
+                    ? "AI backup enabled: Will use general knowledge if PDF doesn't contain the answer" 
+                    : "PDF only: Will strictly use PDF content for answers"
+                  }
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <Button
+            type="submit"
+            disabled={isAnswerLoading || !pdfText || !question.trim()}
+            className="absolute right-2 top-2 rounded-lg p-2 h-10 w-10 button-transition"
+          >
+            {isAnswerLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
+          </Button>
+        </form>
+        
+        {/* Status indicator */}
+        <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${useGeminiBackup ? 'bg-green-500' : 'bg-blue-500'}`} />
+          <span>
+            {useGeminiBackup 
+              ? 'AI backup mode: Enhanced answers with general knowledge' 
+              : 'PDF-only mode: Answers strictly from document content'
+            }
+          </span>
+        </div>
+      </div>
+    </TooltipProvider>
   );
 };
 

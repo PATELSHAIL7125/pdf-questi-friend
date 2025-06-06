@@ -17,9 +17,27 @@ serve(async (req) => {
 
   try {
     console.log("Function called");
-    const { question, pdfText, useGeminiBackup } = await req.json();
+    
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { question, pdfText, useGeminiBackup } = requestBody;
+    console.log('Request parameters:', { 
+      hasQuestion: !!question, 
+      hasPdfText: !!pdfText, 
+      useGeminiBackup: useGeminiBackup 
+    });
 
     if (!question || !pdfText) {
+      console.log('Missing required parameters');
       return new Response(
         JSON.stringify({ error: 'Question and PDF text are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -163,8 +181,8 @@ serve(async (req) => {
             }
           ],
           generationConfig: {
-            temperature: 0.3, // Slightly higher for more natural responses
-            maxOutputTokens: 2000, // Increased for more detailed responses
+            temperature: 0.3,
+            maxOutputTokens: 2000,
             topK: 40,
             topP: 0.9,
             candidateCount: 1
@@ -226,7 +244,7 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log('Gemini API response:', JSON.stringify(data).substring(0, 200) + '...');
+      console.log('Gemini API response received, processing...');
       
       // Extract and clean the answer from Gemini response
       let answer = "Sorry, I couldn't generate an answer from the document.";
@@ -239,7 +257,7 @@ serve(async (req) => {
         
         let rawAnswer = data.candidates[0].content.parts[0].text;
         
-        // Clean up formatting issues
+        // Enhanced cleaning for better formatting
         answer = rawAnswer
           // Remove markdown formatting
           .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold markdown
@@ -248,16 +266,22 @@ serve(async (req) => {
           .replace(/^[\s]*-[\s]*/gm, '') // Remove dash bullet points at line start
           .replace(/```[^`]*```/g, '') // Remove code blocks
           .replace(/`([^`]+)`/g, '$1') // Remove inline code formatting
+          // Fix double asterisks at beginning of lines
+          .replace(/^\*\*\s*/gm, '') // Remove ** at start of lines
+          .replace(/\s\*\*\s*/g, ' ') // Remove ** in middle of text
           // Improve line breaks and spacing
           .replace(/\n{3,}/g, '\n\n') // Replace multiple line breaks with double
           .replace(/\r\n/g, '\n') // Normalize line endings
           .trim(); // Remove leading/trailing whitespace
+        
+        console.log('Answer processed and cleaned');
       }
 
       return new Response(
         JSON.stringify({ answer }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+      
     } catch (geminiError) {
       console.error('Gemini API request error:', geminiError);
       return new Response(
