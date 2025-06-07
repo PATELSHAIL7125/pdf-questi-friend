@@ -255,7 +255,7 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const generateMCQs = async (numQuestions: number = 5) => {
+  const generateMCQs = async (numQuestions: number = 5, questionType: string = 'auto') => {
     if (!pdfText) return;
     
     setIsMCQGenerating(true);
@@ -267,6 +267,7 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         body: {
           pdfText: pdfText,
           numQuestions: numQuestions,
+          questionType: questionType,
         },
       });
 
@@ -305,18 +306,19 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const generatePresentationMCQs = async (numQuestions: number = 5) => {
+  const generatePresentationMCQs = async (numQuestions: number = 5, questionType: string = 'auto') => {
     if (!presentationText) return;
     
     setIsMCQGenerating(true);
     
     try {
-      console.log('Generating MCQs from presentation text');
+      console.log('Generating MCQs from presentation text, length:', presentationText.length);
       // Call the Supabase Edge Function for MCQ generation
       const { data, error } = await supabase.functions.invoke('generate-mcqs', {
         body: {
           pdfText: presentationText, // Use presentation text instead of PDF text
           numQuestions: numQuestions,
+          questionType: questionType,
         },
       });
 

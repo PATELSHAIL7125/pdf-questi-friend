@@ -173,65 +173,95 @@ export const generateSlidePreview = (slideNumber: number, slideText: string): st
   
   // Draw slide border
   ctx.strokeStyle = '#e2e8f0';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 4;
   ctx.strokeRect(0, 0, canvas.width, canvas.height);
   
   // Draw header background
-  const headerGradient = ctx.createLinearGradient(0, 0, 0, 80);
+  const headerGradient = ctx.createLinearGradient(0, 0, 0, 100);
   headerGradient.addColorStop(0, '#3b82f6');
   headerGradient.addColorStop(1, '#1d4ed8');
   ctx.fillStyle = headerGradient;
-  ctx.fillRect(0, 0, canvas.width, 80);
+  ctx.fillRect(0, 0, canvas.width, 100);
   
   // Add slide number in header
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 24px Arial, sans-serif';
+  ctx.font = 'bold 32px Arial, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(`Slide ${slideNumber}`, 40, 50);
+  ctx.fillText(`Slide ${slideNumber}`, 50, 65);
   
-  // Extract the first line as title (if it exists)
-  const lines = slideText.split('\n');
-  let title = '';
-  let content = '';
+  // Extract content from slide text
+  const lines = slideText.split('\n').filter(line => line.trim() !== '');
+  let contentLines = [];
   
-  if (lines.length > 0) {
-    // Skip "Slide X:" prefix if it exists
-    if (lines[0].startsWith('Slide ') && lines[0].includes(':')) {
-      if (lines.length > 1) {
-        title = lines[1];
-        content = lines.slice(2).join('\n');
-      }
-    } else {
-      title = lines[0];
-      content = lines.slice(1).join('\n');
+  // Skip the "Slide X:" line if present
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line && !line.startsWith('Slide ')) {
+      contentLines.push(line);
+    } else if (line.startsWith('Slide ') && line.includes(':') && i < lines.length - 1) {
+      // Skip this line as it's just the slide header
+      continue;
     }
   }
   
-  // Draw title section
-  if (title) {
-    ctx.fillStyle = '#1e293b';
-    ctx.font = 'bold 36px Arial, sans-serif';
-    ctx.textAlign = 'left';
-    wrapText(ctx, title, 40, 140, canvas.width - 80, 44);
+  // Draw content
+  let yPosition = 150;
+  const lineHeight = 40;
+  const maxWidth = canvas.width - 100;
+  
+  // Set content styling
+  ctx.fillStyle = '#1e293b';
+  ctx.font = '28px Arial, sans-serif';
+  ctx.textAlign = 'left';
+  
+  // Process and draw each line
+  for (let i = 0; i < Math.min(contentLines.length, 12); i++) {
+    const line = contentLines[i];
+    if (line.trim()) {
+      // Handle long lines by wrapping them
+      const words = line.split(' ');
+      let currentLine = '';
+      
+      for (const word of words) {
+        const testLine = currentLine + (currentLine ? ' ' : '') + word;
+        const metrics = ctx.measureText(testLine);
+        
+        if (metrics.width > maxWidth && currentLine) {
+          // Draw current line and start new one
+          ctx.fillText(currentLine, 50, yPosition);
+          yPosition += lineHeight;
+          currentLine = word;
+          
+          // Stop if we're running out of space
+          if (yPosition > canvas.height - 100) break;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      
+      // Draw the last line
+      if (currentLine && yPosition <= canvas.height - 100) {
+        ctx.fillText(currentLine, 50, yPosition);
+        yPosition += lineHeight;
+      }
+      
+      // Add some extra space between paragraphs
+      yPosition += 10;
+    }
+    
+    // Stop if we're running out of space
+    if (yPosition > canvas.height - 100) break;
   }
   
-  // Draw content section
-  if (content) {
-    ctx.fillStyle = '#475569';
-    ctx.font = '24px Arial, sans-serif';
-    ctx.textAlign = 'left';
-    wrapText(ctx, content, 40, title ? 220 : 140, canvas.width - 80, 32);
-  }
-  
-  // Add decorative elements
+  // Add decorative footer
   ctx.fillStyle = '#e2e8f0';
-  ctx.fillRect(40, canvas.height - 20, canvas.width - 80, 2);
+  ctx.fillRect(50, canvas.height - 50, canvas.width - 100, 3);
   
-  // Add logo placeholder
+  // Add branding
   ctx.fillStyle = '#94a3b8';
-  ctx.font = '14px Arial, sans-serif';
+  ctx.font = '16px Arial, sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('PDF Insight', canvas.width - 40, canvas.height - 40);
+  ctx.fillText('PDF Insight - PowerPoint Analysis', canvas.width - 50, canvas.height - 20);
   
   // Return the canvas as a data URL
   return canvas.toDataURL('image/png');

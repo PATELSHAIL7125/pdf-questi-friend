@@ -7,14 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 
 const PresentationMCQGenerator: React.FC = () => {
-  const { presentationText, generateMCQs, isMCQGenerating, mcqSet } = usePDF();
+  const { presentationText, generatePresentationMCQs, isMCQGenerating, mcqSet } = usePDF();
   const [numQuestions, setNumQuestions] = useState<number>(5);
   const [questionType, setQuestionType] = useState<string>("auto");
 
   const handleGenerateMCQs = async () => {
     if (presentationText) {
-      // Use presentation text instead of PDF text for MCQ generation
-      await generateMCQs(numQuestions, questionType); 
+      console.log('Generating MCQs from presentation text, length:', presentationText.length);
+      await generatePresentationMCQs(numQuestions, questionType); 
     }
   };
 
