@@ -58,6 +58,20 @@ serve(async (req) => {
     const isEnhanced = !!enhancedContext;
 
     // Detect question type for customized prompting
+    const isCodingQuestion = 
+      question.toLowerCase().includes('code') || 
+      question.toLowerCase().includes('programming') || 
+      question.toLowerCase().includes('function') || 
+      question.toLowerCase().includes('algorithm') || 
+      question.toLowerCase().includes('script') ||
+      question.toLowerCase().includes('implementation') ||
+      question.toLowerCase().includes('syntax') ||
+      question.toLowerCase().includes('example') ||
+      question.toLowerCase().includes('how to') ||
+      question.toLowerCase().includes('write') ||
+      question.toLowerCase().includes('create') ||
+      question.toLowerCase().includes('develop');
+
     const isDataVisualizationQuestion = 
       question.toLowerCase().includes('data visual') || 
       question.toLowerCase().includes('visualization') || 
@@ -77,6 +91,7 @@ serve(async (req) => {
       question.toLowerCase().includes('prim');
 
     console.log(`Question type: ${
+      isCodingQuestion ? 'Coding/Programming' :
       isAlgorithmAnalysisQuestion ? 'Algorithm Analysis' : 
       isDataVisualizationQuestion ? 'Data Visualization' : 'General'
     }`);
@@ -86,7 +101,43 @@ serve(async (req) => {
     // Enhanced prompt engineering with better context handling
     let prompt = '';
     
-    if (isAlgorithmAnalysisQuestion) {
+    if (isCodingQuestion) {
+      prompt = `
+        You are an expert programming instructor with access to enhanced document analysis.
+        
+        ${isEnhanced ? 'Enhanced Document Analysis:' : 'Document content:'}
+        ${contextToUse.substring(0, 15000)} ${contextToUse.length > 15000 ? '... [content truncated due to length]' : ''}
+        
+        ${conversationHistory ? `Previous conversation context:\n${conversationHistory}\n` : ''}
+        
+        User Coding Question: ${question}
+        
+        Please provide a comprehensive programming answer following these guidelines:
+        1. Identify and explain any programming concepts, algorithms, or code mentioned in the document
+        2. Provide complete, working code examples using appropriate programming languages
+        3. Use proper code formatting with triple backticks and language specification (e.g., \`\`\`python, \`\`\`javascript, \`\`\`java)
+        4. Make code blocks complete and runnable when possible
+        5. Include step-by-step explanations of the code
+        6. Show multiple approaches or variations if relevant
+        7. Include error handling and best practices
+        8. Add meaningful comments to explain complex parts
+        9. Provide input/output examples where applicable
+        10. Reference specific sections from the document when applicable
+        
+        Code formatting requirements:
+        - Always use \`\`\`language syntax for code blocks
+        - Use descriptive variable names
+        - Include complete functions/classes when relevant
+        - Format code for easy copying and execution
+        
+        ${useGeminiBackup ? 
+          "Enhanced AI Mode: If the document lacks specific programming information, provide comprehensive code examples and explanations based on your expertise while clearly distinguishing between document content and additional programming knowledge. Focus on practical, working solutions." :
+          "Document-Only Mode: Base your answer strictly on programming concepts and code found in the document. If programming information is missing, clearly state what coding content is and isn't available in the document."
+        }
+        
+        ${isEnhanced ? 'Note: This analysis uses enhanced document processing with semantic search for improved programming content extraction.' : ''}
+      `;
+    } else if (isAlgorithmAnalysisQuestion) {
       prompt = `
         You are an expert computer science educator with access to enhanced document analysis.
         
@@ -105,8 +156,14 @@ serve(async (req) => {
         5. Provide practical examples and real-world applications
         6. Reference specific sections from the document when applicable
         7. Build upon previous conversation context if relevant
+        8. Include code implementations when applicable using proper formatting
         
-        Format your response as plain text without markdown symbols. Use numbered lists and clear paragraph breaks for readability.
+        Code formatting (if applicable):
+        - Use \`\`\`language syntax for code blocks
+        - Provide complete, runnable implementations
+        - Include complexity analysis as comments
+        
+        Format your response as plain text without markdown symbols except for code blocks. Use numbered lists and clear paragraph breaks for readability.
         
         ${useGeminiBackup ? 
           "Enhanced AI Mode: If the document lacks specific information, supplement with your expert knowledge while clearly distinguishing between document content and additional explanations. Provide comprehensive coverage of the topic." :
@@ -134,11 +191,17 @@ serve(async (req) => {
         5. Reference specific datasets, examples, or case studies from the document
         6. Provide practical implementation recommendations and considerations
         7. Connect to previous conversation topics when relevant
+        8. Include code examples for data visualization when applicable
         
-        Format your response as plain text without markdown symbols. Use numbered lists and clear sections for better readability.
+        Code formatting (if applicable):
+        - Use \`\`\`python, \`\`\`javascript, \`\`\`r syntax for code blocks
+        - Show examples with libraries like matplotlib, seaborn, plotly, d3.js
+        - Include complete, working examples
+        
+        Format your response as plain text without markdown symbols except for code blocks. Use numbered lists and clear sections for better readability.
         
         ${useGeminiBackup ? 
-          "Enhanced AI Mode: If the document lacks specific information, provide comprehensive insights based on your expertise while clearly indicating which parts are not from the document. Include industry best practices and modern approaches." :
+          "Enhanced AI Mode: If the document lacks specific information, provide comprehensive insights based on your expertise while clearly indicating which parts are not from the document. Include industry best practices and modern approaches with code examples." :
           "Document-Only Mode: Focus strictly on what's available in the document and clearly explain any limitations or missing information."
         }
         
@@ -277,18 +340,32 @@ serve(async (req) => {
         
         let rawAnswer = data.candidates[0].content.parts[0].text;
         
-        answer = rawAnswer
-          .replace(/\*\*([^*]+)\*\*/g, '$1')
-          .replace(/\*([^*]+)\*/g, '$1')
-          .replace(/^[\s]*\*[\s]*/gm, '')
-          .replace(/^[\s]*-[\s]*/gm, '')
-          .replace(/```[^`]*```/g, '')
-          .replace(/`([^`]+)`/g, '$1')
-          .replace(/^\*\*\s*/gm, '')
-          .replace(/\s\*\*\s*/g, ' ')
-          .replace(/\n{3,}/g, '\n\n')
-          .replace(/\r\n/g, '\n')
-          .trim();
+        // For coding questions, preserve code blocks but clean other formatting
+        if (isCodingQuestion || isDataVisualizationQuestion || isAlgorithmAnalysisQuestion) {
+          answer = rawAnswer
+            .replace(/\*\*([^*]+)\*\*/g, '$1')
+            .replace(/\*([^*]+)\*/g, '$1')
+            .replace(/^[\s]*\*[\s]*/gm, '')
+            .replace(/^[\s]*-[\s]*/gm, '')
+            .replace(/^\*\*\s*/gm, '')
+            .replace(/\s\*\*\s*/g, ' ')
+            .replace(/\n{3,}/g, '\n\n')
+            .replace(/\r\n/g, '\n')
+            .trim();
+        } else {
+          answer = rawAnswer
+            .replace(/\*\*([^*]+)\*\*/g, '$1')
+            .replace(/\*([^*]+)\*/g, '$1')
+            .replace(/^[\s]*\*[\s]*/gm, '')
+            .replace(/^[\s]*-[\s]*/gm, '')
+            .replace(/```[^`]*```/g, '')
+            .replace(/`([^`]+)`/g, '$1')
+            .replace(/^\*\*\s*/gm, '')
+            .replace(/\s\*\*\s*/g, ' ')
+            .replace(/\n{3,}/g, '\n\n')
+            .replace(/\r\n/g, '\n')
+            .trim();
+        }
         
         console.log('Enhanced answer processed and cleaned');
       }
@@ -297,7 +374,8 @@ serve(async (req) => {
         JSON.stringify({ 
           answer,
           enhanced: isEnhanced,
-          processingMode: useGeminiBackup ? 'enhanced_ai' : 'document_only'
+          processingMode: useGeminiBackup ? 'enhanced_ai' : 'document_only',
+          questionType: isCodingQuestion ? 'coding' : isAlgorithmAnalysisQuestion ? 'algorithm' : isDataVisualizationQuestion ? 'visualization' : 'general'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

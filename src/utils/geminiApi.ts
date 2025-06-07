@@ -22,6 +22,20 @@ export const queryGeminiAboutDocument = async (
     // Get the generative model (now using Gemini 2.0 Flash for better performance)
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
+    // Check if the question is related to coding/programming
+    const isCodingQuestion = question.toLowerCase().includes('code') || 
+                             question.toLowerCase().includes('programming') || 
+                             question.toLowerCase().includes('function') || 
+                             question.toLowerCase().includes('algorithm') || 
+                             question.toLowerCase().includes('script') ||
+                             question.toLowerCase().includes('implementation') ||
+                             question.toLowerCase().includes('syntax') ||
+                             question.toLowerCase().includes('example') ||
+                             question.toLowerCase().includes('how to') ||
+                             question.toLowerCase().includes('write') ||
+                             question.toLowerCase().includes('create') ||
+                             question.toLowerCase().includes('develop');
+
     // Check if the question is related to data visualization
     const isDataVisualizationQuestion = question.toLowerCase().includes('data visual') || 
                                         question.toLowerCase().includes('visualization') || 
@@ -40,7 +54,35 @@ export const queryGeminiAboutDocument = async (
     // Create a context-rich prompt with specific instructions
     let prompt = '';
     
-    if (isDataVisualizationQuestion) {
+    if (isCodingQuestion) {
+      prompt = `
+I have a document with the following content:
+
+${documentText}
+
+The user is asking a coding/programming question: "${question}"
+
+Please provide a detailed and helpful answer based on this document content with the following requirements:
+1. If the document contains code examples, algorithms, or programming concepts, explain them thoroughly
+2. Provide working code examples in appropriate programming languages (prefer Python, JavaScript, Java, or C++ when relevant)
+3. Use proper code formatting with triple backticks and language specification (e.g., \`\`\`python)
+4. Include complete, runnable code snippets when possible
+5. Explain the code line by line when necessary
+6. Show multiple approaches or variations if relevant
+7. Include error handling and best practices
+8. Format code blocks clearly so they can be easily copied
+
+Important formatting rules:
+- Always use \`\`\`language for code blocks (e.g., \`\`\`python, \`\`\`javascript, \`\`\`java)
+- Make code blocks complete and runnable when possible
+- Use descriptive variable names and add comments
+- Include input/output examples where applicable
+
+${useGeminiBackup ? 
+  "If the document doesn't contain the specific programming information needed, provide comprehensive code examples and explanations based on your knowledge, but clearly indicate which parts are not from the document. Focus on practical, working code solutions." :
+  "If the document doesn't contain the specific programming information needed, please explicitly state what coding information is available in the document and what is missing."
+}`;
+    } else if (isDataVisualizationQuestion) {
       prompt = `
 I have a document with the following content:
 
@@ -53,10 +95,12 @@ Please provide a detailed and helpful answer based on this document content.
 2. Explain how these visualization tools are being used according to the document
 3. Include specific details about data visualization techniques or projects mentioned
 4. If relevant, explain the context in which data visualization is mentioned (e.g., in a resume, project description, etc.)
-5. Be comprehensive but concise in your explanation
+5. Provide code examples for data visualization when applicable using libraries like matplotlib, seaborn, plotly, d3.js, etc.
+6. Use proper code formatting with triple backticks for any code examples
+7. Be comprehensive but concise in your explanation
 
 ${useGeminiBackup ? 
-  "If the document doesn't contain the specific information to answer this question, please provide a helpful response based on your knowledge about data visualization, but clearly indicate which parts are not from the document." :
+  "If the document doesn't contain the specific information to answer this question, please provide a helpful response based on your knowledge about data visualization with practical code examples, but clearly indicate which parts are not from the document." :
   "If the document doesn't contain the specific information to answer this question, please explicitly state what information is available in the document and what is missing."
 }`;
     } else if (isAlgorithmQuestion) {
@@ -72,10 +116,13 @@ Please provide a detailed and helpful answer based on this document content.
 2. Detail any time or space complexity analysis found in the document
 3. Explain algorithm implementations, optimizations, or comparisons mentioned
 4. If the document discusses Big O notation or efficiency, summarize those sections
-5. Be precise and technical in your explanation
+5. Provide code implementations of algorithms when applicable
+6. Use proper code formatting with triple backticks for any code examples
+7. Include complexity analysis and step-by-step explanations
+8. Be precise and technical in your explanation
 
 ${useGeminiBackup ? 
-  "If the document doesn't contain the specific information to answer this question, please provide a helpful response based on your knowledge about algorithms and computational complexity, but clearly indicate which parts are not from the document." :
+  "If the document doesn't contain the specific information to answer this question, please provide a helpful response based on your knowledge about algorithms and computational complexity with working code examples, but clearly indicate which parts are not from the document." :
   "If the document doesn't contain the specific information to answer this question, please explicitly state what information is available in the document and what is missing."
 }`;
     } else {
@@ -88,7 +135,7 @@ ${documentText}
 Based on this document content, please answer the following question:
 ${question}
 
-Be specific and reference only information contained in the document. 
+Be specific and reference only information contained in the document. If the question relates to any technical concepts, code, or implementations mentioned in the document, provide detailed explanations and examples.
 
 ${useGeminiBackup ? 
   "If the document doesn't contain information to answer this question, please provide a helpful response based on your general knowledge, but clearly indicate which parts of your answer are not from the document." :
@@ -98,6 +145,7 @@ ${useGeminiBackup ?
 
     console.log('Querying Gemini API with prompt of length:', prompt.length);
     console.log('Question category:', 
+      isCodingQuestion ? 'Coding/Programming' :
       isAlgorithmQuestion ? 'Algorithm Analysis' : 
       isDataVisualizationQuestion ? 'Data Visualization' : 'General');
     console.log('Using Gemini backup:', useGeminiBackup);
@@ -226,4 +274,3 @@ Make sure each question has a clear correct answer based on the document content
     throw new Error('Failed to generate MCQs. Please try again later.');
   }
 };
-

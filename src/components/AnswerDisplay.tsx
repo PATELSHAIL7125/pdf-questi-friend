@@ -1,15 +1,150 @@
 
-import React from 'react';
-import { MessageCircle, Loader2, Brain, FileText, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { MessageCircle, Loader2, Brain, FileText, Clock, Copy, Check, Code } from 'lucide-react';
 import { usePDF } from '@/context/PDFContext';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
 
 const AnswerDisplay: React.FC = () => {
   const { questions } = usePDF();
+  const { toast } = useToast();
+  const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({});
   
   if (questions.length === 0) {
     return null;
   }
+
+  const copyToClipboard = async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedStates(prev => ({ ...prev, [id]: true }));
+      toast({
+        title: "Code copied!",
+        description: "Code has been copied to your clipboard.",
+      });
+      setTimeout(() => {
+        setCopiedStates(prev => ({ ...prev, [id]: false }));
+      }, 2000);
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy code to clipboard.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const extractCodeBlocks = (text: string) => {
+    const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+    const inlineCodeRegex = /`([^`]+)`/g;
+    const blocks = [];
+    let match;
+
+    // Extract multi-line code blocks
+    while ((match = codeBlockRegex.exec(text)) !== null) {
+      blocks.push({
+        type: 'block',
+        language: match[1] || 'text',
+        code: match[2].trim(),
+        full: match[0]
+      });
+    }
+
+    // Extract inline code
+    while ((match = inlineCodeRegex.exec(text)) !== null) {
+      if (match[1].length > 10) { // Only include longer inline code snippets
+        blocks.push({
+          type: 'inline',
+          language: 'text',
+          code: match[1],
+          full: match[0]
+        });
+      }
+    }
+
+    return blocks;
+  };
+
+  const formatAnswerWithCode = (answer: string, questionId: string) => {
+    const codeBlocks = extractCodeBlocks(answer);
+    
+    if (codeBlocks.length === 0) {
+      return <div className="text-sm whitespace-pre-line leading-relaxed">{answer}</div>;
+    }
+
+    let formattedAnswer = answer;
+    const elements = [];
+    let lastIndex = 0;
+
+    codeBlocks.forEach((block, index) => {
+      const blockIndex = formattedAnswer.indexOf(block.full, lastIndex);
+      
+      // Add text before code block
+      if (blockIndex > lastIndex) {
+        const textBefore = formattedAnswer.substring(lastIndex, blockIndex);
+        if (textBefore.trim()) {
+          elements.push(
+            <div key={`text-${index}`} className="text-sm whitespace-pre-line leading-relaxed mb-3">
+              {textBefore.trim()}
+            </div>
+          );
+        }
+      }
+
+      // Add code block with copy functionality
+      const codeId = `${questionId}-code-${index}`;
+      elements.push(
+        <div key={`code-${index}`} className="my-4">
+          <div className="relative bg-gray-900 rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-800 text-gray-300 text-xs">
+              <div className="flex items-center gap-2">
+                <Code className="h-3 w-3" />
+                <span>{block.language || 'code'}</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(block.code, codeId)}
+                className="h-6 px-2 text-gray-300 hover:text-white hover:bg-gray-700"
+              >
+                {copiedStates[codeId] ? (
+                  <>
+                    <Check className="h-3 w-3 mr-1" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </>
+                )}
+              </Button>
+            </div>
+            <pre className="p-4 text-sm text-gray-100 overflow-x-auto">
+              <code>{block.code}</code>
+            </pre>
+          </div>
+        </div>
+      );
+
+      lastIndex = blockIndex + block.full.length;
+    });
+
+    // Add remaining text after last code block
+    if (lastIndex < formattedAnswer.length) {
+      const textAfter = formattedAnswer.substring(lastIndex);
+      if (textAfter.trim()) {
+        elements.push(
+          <div key="text-final" className="text-sm whitespace-pre-line leading-relaxed">
+            {textAfter.trim()}
+          </div>
+        );
+      }
+    }
+
+    return <div>{elements}</div>;
+  };
   
   return (
     <div className="w-full max-w-3xl space-y-4 mb-10 animate-fade-in">
@@ -53,10 +188,8 @@ const AnswerDisplay: React.FC = () => {
                     <span>Context-Aware</span>
                   </div>
                   
-                  {/* Answer content */}
-                  <div className="text-sm whitespace-pre-line leading-relaxed">
-                    {qa.answer}
-                  </div>
+                  {/* Answer content with code formatting */}
+                  {formatAnswerWithCode(qa.answer, qa.id)}
                   
                   {/* Answer quality indicators */}
                   <div className="mt-3 pt-3 border-t border-border/50">
