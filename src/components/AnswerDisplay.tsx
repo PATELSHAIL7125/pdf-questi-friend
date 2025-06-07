@@ -36,28 +36,32 @@ const AnswerDisplay: React.FC = () => {
   };
 
   const extractCodeBlocks = (text: string) => {
+    // Only extract proper code blocks with triple backticks
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
-    const inlineCodeRegex = /`([^`]+)`/g;
     const blocks = [];
     let match;
 
-    // Extract multi-line code blocks
     while ((match = codeBlockRegex.exec(text)) !== null) {
-      blocks.push({
-        type: 'block',
-        language: match[1] || 'text',
-        code: match[2].trim(),
-        full: match[0]
+      const code = match[2].trim();
+      // Filter out code blocks that are mostly explanatory text
+      const codeLines = code.split('\n');
+      const actualCodeLines = codeLines.filter(line => {
+        const trimmedLine = line.trim();
+        return trimmedLine && 
+               !trimmedLine.startsWith('//') && 
+               !trimmedLine.startsWith('#') &&
+               !trimmedLine.startsWith('/*') &&
+               !trimmedLine.includes('explanation') &&
+               !trimmedLine.includes('example') &&
+               trimmedLine.length > 3;
       });
-    }
 
-    // Extract inline code
-    while ((match = inlineCodeRegex.exec(text)) !== null) {
-      if (match[1].length > 10) { // Only include longer inline code snippets
+      // Only include if at least 30% of lines are actual code
+      if (actualCodeLines.length >= Math.max(1, codeLines.length * 0.3)) {
         blocks.push({
-          type: 'inline',
-          language: 'text',
-          code: match[1],
+          type: 'block',
+          language: match[1] || 'text',
+          code: code,
           full: match[0]
         });
       }
