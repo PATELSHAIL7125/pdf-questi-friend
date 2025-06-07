@@ -3,8 +3,8 @@ import React from 'react';
 import ModernHeader from '@/components/ModernHeader';
 import PresentationUploader from '@/components/PresentationUploader';
 import PresentationViewer from '@/components/PresentationViewer';
-import MCQGenerator from '@/components/MCQGenerator';
-import MCQDisplay from '@/components/MCQDisplay';
+import PresentationMCQGenerator from '@/components/PresentationMCQGenerator';
+import PresentationMCQDisplay from '@/components/PresentationMCQDisplay';
 import { Button } from '@/components/ui/button';
 import { FileIcon, Presentation, FileUp, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -114,6 +114,19 @@ const PresentationContent: React.FC = () => {
               </CardContent>
             </Card>
 
+            {/* Question and Answer Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl text-center">Ask Questions</CardTitle>
+                <CardDescription className="text-center">
+                  Get instant answers from your presentation content
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* This will be rendered by PresentationViewer which includes QuestionInput and AnswerDisplay */}
+              </CardContent>
+            </Card>
+
             {/* MCQ Tools */}
             <Card>
               <CardHeader>
@@ -123,8 +136,8 @@ const PresentationContent: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <MCQGenerator />
-                <MCQDisplay />
+                <PresentationMCQGenerator />
+                <PresentationMCQDisplay />
               </CardContent>
             </Card>
           </div>

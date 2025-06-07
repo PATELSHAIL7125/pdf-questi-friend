@@ -157,33 +157,37 @@ export const extractSlideImages = async (file: File): Promise<string[]> => {
 export const generateSlidePreview = (slideNumber: number, slideText: string): string => {
   // Create a canvas element to render the slide
   const canvas = document.createElement('canvas');
-  canvas.width = 960;
-  canvas.height = 540;
+  canvas.width = 1280;
+  canvas.height = 720;
   
   // Get the 2D context
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
   
-  // Draw slide background
-  ctx.fillStyle = '#ffffff';
+  // Draw slide background with gradient
+  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, '#ffffff');
+  gradient.addColorStop(1, '#f8fafc');
+  ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
   // Draw slide border
-  ctx.strokeStyle = '#dddddd';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(0, 0, canvas.width, canvas.height);
   
-  // Add slide number
-  ctx.fillStyle = '#333333';
-  ctx.font = '16px Arial';
-  ctx.fillText(`Slide ${slideNumber}`, 20, 30);
+  // Draw header background
+  const headerGradient = ctx.createLinearGradient(0, 0, 0, 80);
+  headerGradient.addColorStop(0, '#3b82f6');
+  headerGradient.addColorStop(1, '#1d4ed8');
+  ctx.fillStyle = headerGradient;
+  ctx.fillRect(0, 0, canvas.width, 80);
   
-  // Draw a gradient header
-  const gradient = ctx.createLinearGradient(0, 40, 0, 100);
-  gradient.addColorStop(0, '#f0f0f0');
-  gradient.addColorStop(1, '#ffffff');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 40, canvas.width, 60);
+  // Add slide number in header
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 24px Arial, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Slide ${slideNumber}`, 40, 50);
   
   // Extract the first line as title (if it exists)
   const lines = slideText.split('\n');
@@ -203,26 +207,43 @@ export const generateSlidePreview = (slideNumber: number, slideText: string): st
     }
   }
   
-  // Draw title
-  ctx.fillStyle = '#222222';
-  ctx.font = 'bold 24px Arial';
-  wrapText(ctx, title, 40, 80, canvas.width - 80, 32);
+  // Draw title section
+  if (title) {
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 36px Arial, sans-serif';
+    ctx.textAlign = 'left';
+    wrapText(ctx, title, 40, 140, canvas.width - 80, 44);
+  }
   
-  // Draw content
-  ctx.fillStyle = '#444444';
-  ctx.font = '18px Arial';
-  wrapText(ctx, content, 40, 140, canvas.width - 80, 24);
+  // Draw content section
+  if (content) {
+    ctx.fillStyle = '#475569';
+    ctx.font = '24px Arial, sans-serif';
+    ctx.textAlign = 'left';
+    wrapText(ctx, content, 40, title ? 220 : 140, canvas.width - 80, 32);
+  }
+  
+  // Add decorative elements
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(40, canvas.height - 20, canvas.width - 80, 2);
+  
+  // Add logo placeholder
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '14px Arial, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('PDF Insight', canvas.width - 40, canvas.height - 40);
   
   // Return the canvas as a data URL
   return canvas.toDataURL('image/png');
 };
 
-// Helper function to wrap text within a width
+// Helper function to wrap text within a width with better formatting
 function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
   const words = text.split(' ');
   let line = '';
   let testLine = '';
   let lineCount = 0;
+  const maxLines = 15; // Limit to prevent overflow
   
   for (let n = 0; n < words.length; n++) {
     testLine = line + words[n] + ' ';
@@ -234,8 +255,8 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
       line = words[n] + ' ';
       lineCount++;
       
-      // Limit to 12 lines to prevent overflow
-      if (lineCount >= 12) {
+      // Stop if we've reached max lines
+      if (lineCount >= maxLines) {
         ctx.fillText(line + '...', x, y + (lineCount * lineHeight));
         break;
       }
@@ -244,8 +265,8 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
     }
   }
   
-  // Draw the last line
-  if (lineCount < 12) {
+  // Draw the last line if we haven't exceeded max lines
+  if (lineCount < maxLines) {
     ctx.fillText(line, x, y + (lineCount * lineHeight));
   }
 }

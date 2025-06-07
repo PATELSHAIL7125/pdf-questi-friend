@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePDF } from '@/context/PDFContext';
-import { FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download, Share2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import PresentationQuestionInput from './PresentationQuestionInput';
-import PresentationAnswerDisplay from './PresentationAnswerDisplay';
 import { Button } from '@/components/ui/button';
 import { generateSlidePreview } from '@/utils/api/auth/pptxUtils';
+import { useToast } from '@/components/ui/use-toast';
 
 const PresentationViewer: React.FC = () => {
   const { presentationFile, presentationText } = usePDF();
+  const { toast } = useToast();
   const [zoomLevel, setZoomLevel] = useState(100);
   const [currentSlide, setCurrentSlide] = useState(1);
   const [totalSlides, setTotalSlides] = useState(0);
@@ -98,95 +98,144 @@ const PresentationViewer: React.FC = () => {
     }
   };
 
+  const handleDownload = () => {
+    // Create a link to download the original file
+    const url = URL.createObjectURL(presentationFile);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = presentationFile.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Download started",
+      description: `${presentationFile.name} is being downloaded.`,
+    });
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: presentationName,
+          text: `Check out this presentation: ${presentationName}`,
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    } else {
+      // Fallback to copying URL to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link copied",
+        description: "Presentation link copied to clipboard.",
+      });
+    }
+  };
+
   return (
     <div className="w-full flex flex-col items-center animate-fade-in">
-      <Card className="w-full max-w-4xl mb-6 overflow-hidden">
+      <Card className="w-full max-w-6xl mb-6 overflow-hidden shadow-lg">
         <CardContent className="p-6">
-          <div className="flex items-center mb-4">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-3 flex-shrink-0">
-              <FileText className="h-6 w-6 text-primary" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-3 flex-shrink-0">
+                <FileText className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-medium text-lg">{presentationFile.name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {fileSize} • Uploaded {uploadDate}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-medium text-lg">{presentationFile.name}</h3>
-              <p className="text-sm text-muted-foreground">
-                {fileSize} • Uploaded {uploadDate}
-              </p>
+            
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleShare}>
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
             </div>
           </div>
           
-          <div className="rounded-lg border p-4 bg-secondary/30 mb-4">
-            <div className="text-lg font-medium mb-2">{presentationName}</div>
-            <div className="flex flex-col items-center">
+          <div className="rounded-lg border bg-background overflow-hidden shadow-inner">
+            <div className="bg-muted/30 p-4 border-b">
+              <div className="text-lg font-medium text-center">{presentationName}</div>
+            </div>
+            
+            <div className="p-6 bg-white dark:bg-muted/20">
               {/* Slide preview image */}
               <div 
-                className="w-full border rounded-lg shadow-sm overflow-hidden bg-white mb-4"
+                className="w-full border rounded-lg shadow-lg overflow-hidden bg-white mb-4 mx-auto transition-all duration-300"
                 style={{ 
-                  maxWidth: `${zoomLevel}%`,
-                  transition: 'all 0.2s ease',
-                  margin: '0 auto'
+                  maxWidth: `${Math.min(zoomLevel, 100)}%`,
+                  transform: `scale(${zoomLevel / 100})`,
+                  transformOrigin: 'center top'
                 }}
               >
                 <img 
                   src={slideDataUrl} 
                   alt={`Slide ${currentSlide}`}
-                  className="w-full h-auto"
+                  className="w-full h-auto block"
+                  style={{ 
+                    maxWidth: '100%',
+                    height: 'auto'
+                  }}
                 />
-              </div>
-              
-              {/* Slide text content (can be hidden if desired) */}
-              <div 
-                className="p-4 bg-white border rounded-lg shadow-sm w-full mt-2" 
-                style={{ 
-                  fontSize: `${zoomLevel * 0.9}%`,
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'pre-wrap'
-                }}
-              >
-                {slideContent}
               </div>
             </div>
           </div>
           
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mt-6 pt-4 border-t">
             <Button
               variant="outline"
-              size="icon"
+              size="sm"
               onClick={prevSlide}
               disabled={currentSlide <= 1}
+              className="flex items-center gap-2"
             >
               <ChevronLeft className="h-4 w-4" />
+              Previous
             </Button>
             
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={decreaseZoom}>
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" onClick={decreaseZoom}>
                 <ZoomOut className="h-4 w-4" />
               </Button>
               
-              <span className="text-sm">Zoom: {zoomLevel}%</span>
+              <span className="text-sm font-medium min-w-[80px] text-center">
+                {zoomLevel}%
+              </span>
               
-              <Button variant="outline" size="icon" onClick={increaseZoom}>
+              <Button variant="outline" size="sm" onClick={increaseZoom}>
                 <ZoomIn className="h-4 w-4" />
               </Button>
             </div>
             
-            <div className="text-sm">
-              Page {currentSlide} of {totalSlides}
+            <div className="text-sm font-medium">
+              {currentSlide} of {totalSlides}
             </div>
             
             <Button
               variant="outline"
-              size="icon"
+              size="sm"
               onClick={nextSlide}
               disabled={currentSlide >= totalSlides}
+              className="flex items-center gap-2"
             >
+              Next
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </CardContent>
       </Card>
-      
-      <PresentationQuestionInput />
-      <PresentationAnswerDisplay />
     </div>
   );
 };

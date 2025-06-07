@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -58,6 +57,7 @@ interface PDFContextType {
   askQuestion: (question: string, useGeminiBackup?: boolean) => Promise<void>;
   askPresentationQuestion: (question: string, useGeminiBackup?: boolean) => Promise<void>;
   generateMCQs: (numQuestions?: number, questionType?: string) => Promise<void>;
+  generatePresentationMCQs: (numQuestions?: number, questionType?: string) => Promise<void>;
   setUserAnswer: (questionIndex: number, answer: string) => void;
 }
 
@@ -305,6 +305,56 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const generatePresentationMCQs = async (numQuestions: number = 5) => {
+    if (!presentationText) return;
+    
+    setIsMCQGenerating(true);
+    
+    try {
+      console.log('Generating MCQs from presentation text');
+      // Call the Supabase Edge Function for MCQ generation
+      const { data, error } = await supabase.functions.invoke('generate-mcqs', {
+        body: {
+          pdfText: presentationText, // Use presentation text instead of PDF text
+          numQuestions: numQuestions,
+        },
+      });
+
+      if (error) {
+        console.error('Error calling MCQ generation function:', error);
+        throw new Error(error.message);
+      }
+
+      if (data.error) {
+        console.error('MCQ generation error:', data.error);
+        throw new Error(data.error);
+      }
+
+      if (!data.mcqData) {
+        throw new Error('Failed to generate MCQs');
+      }
+
+      // Parse the MCQ data
+      const mcqData = JSON.parse(data.mcqData);
+      
+      if (!mcqData.questions || !Array.isArray(mcqData.questions)) {
+        throw new Error('Invalid MCQ data format');
+      }
+      
+      // Set the MCQ data
+      setMCQSet({
+        questions: mcqData.questions,
+        generatedAt: new Date(),
+      });
+      
+      console.log(`Generated ${mcqData.questions.length} presentation MCQs successfully`);
+    } catch (error) {
+      console.error('Error generating presentation MCQs:', error);
+    } finally {
+      setIsMCQGenerating(false);
+    }
+  };
+
   const setUserAnswer = (questionIndex: number, answer: string) => {
     if (!mcqSet) return;
     
@@ -358,6 +408,7 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         askQuestion,
         askPresentationQuestion,
         generateMCQs,
+        generatePresentationMCQs,
         setUserAnswer,
       }}
     >
