@@ -107,25 +107,8 @@ const PresentationContent: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Presentation Viewer */}
-            <Card>
-              <CardContent className="p-6">
-                <PresentationViewer />
-              </CardContent>
-            </Card>
-
-            {/* Question and Answer Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl text-center">Ask Questions</CardTitle>
-                <CardDescription className="text-center">
-                  Get instant answers from your presentation content
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* This will be rendered by PresentationViewer which includes QuestionInput and AnswerDisplay */}
-              </CardContent>
-            </Card>
+            {/* Presentation Viewer with integrated Q&A */}
+            <PresentationViewer />
 
             {/* MCQ Tools */}
             <Card>

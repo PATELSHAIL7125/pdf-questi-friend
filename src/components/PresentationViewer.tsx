@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { generateSlidePreview } from '@/utils/api/auth/pptxUtils';
 import { useToast } from '@/components/ui/use-toast';
+import PresentationQuestionInput from '@/components/PresentationQuestionInput';
+import PresentationAnswerDisplay from '@/components/PresentationAnswerDisplay';
 
 const PresentationViewer: React.FC = () => {
   const { presentationFile, presentationText } = usePDF();
@@ -236,6 +238,12 @@ const PresentationViewer: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Question Input Section */}
+      <div className="w-full max-w-4xl mb-6">
+        <PresentationQuestionInput />
+        <PresentationAnswerDisplay />
+      </div>
     </div>
   );
 };
