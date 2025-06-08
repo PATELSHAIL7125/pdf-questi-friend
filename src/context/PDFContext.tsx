@@ -181,6 +181,10 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const askPresentationQuestion = async (questionText: string, useGeminiBackup: boolean = false) => {
     if (!presentationText) return;
     
+    console.log('Asking presentation question:', questionText);
+    console.log('Presentation text length:', presentationText.length);
+    console.log('Use Gemini backup:', useGeminiBackup);
+    
     // Add the question with a loading state
     const tempId = Date.now().toString();
     const loadingQuestion: Question = {
@@ -195,12 +199,22 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsPresentationAnswerLoading(true);
     
     try {
-      // Call the Supabase Edge Function using the JavaScript client
+      // Enhanced context specifically for presentations
+      const enhancedPrompt = `You are analyzing a PowerPoint presentation. Here is the content from all slides:
+
+${presentationText}
+
+User Question: ${questionText}
+
+Please provide a comprehensive answer based on the presentation content. If the presentation doesn't contain enough information to fully answer the question and the user has enabled AI assistance, you may supplement with general knowledge while clearly indicating what information comes from the presentation versus general knowledge.`;
+
+      // Call the Supabase Edge Function with enhanced presentation context
       const { data, error } = await supabase.functions.invoke('answer-from-pdf', {
         body: {
-          question: questionText,
-          pdfText: presentationText, // We're reusing the same function but with presentation text
-          useGeminiBackup: useGeminiBackup
+          question: enhancedPrompt,
+          pdfText: presentationText,
+          useGeminiBackup: useGeminiBackup,
+          isPresentation: true
         },
       });
 
@@ -231,6 +245,8 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return;
       }
 
+      console.log('Received presentation answer:', data.answer?.substring(0, 100) + '...');
+
       // Update the question with the answer
       setPresentationQuestions((prev) => prev.map(q => 
         q.id === tempId 
@@ -238,7 +254,7 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           : q
       ));
     } catch (error) {
-      console.error('Error asking question:', error);
+      console.error('Error asking presentation question:', error);
       
       // Update with error message
       setPresentationQuestions((prev) => prev.map(q => 
