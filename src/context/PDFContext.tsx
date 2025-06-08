@@ -42,6 +42,8 @@ interface PDFContextType {
   isPresentationAnswerLoading: boolean;
   mcqSet: MCQSet | null;
   isMCQGenerating: boolean;
+  aiProvider: string;
+  aiModel: string;
   setPdfFile: (file: File | null) => void;
   setPdfUrl: (url: string | null) => void;
   setPdfText: (text: string | null) => void;
@@ -59,6 +61,8 @@ interface PDFContextType {
   generateMCQs: (numQuestions?: number, questionType?: string) => Promise<void>;
   generatePresentationMCQs: (numQuestions?: number, questionType?: string) => Promise<void>;
   setUserAnswer: (questionIndex: number, answer: string) => void;
+  setAiProvider: (provider: string) => void;
+  setAiModel: (model: string) => void;
 }
 
 const PDFContext = createContext<PDFContextType | undefined>(undefined);
@@ -78,6 +82,8 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isPresentationAnswerLoading, setIsPresentationAnswerLoading] = useState<boolean>(false);
   const [mcqSet, setMCQSet] = useState<MCQSet | null>(null);
   const [isMCQGenerating, setIsMCQGenerating] = useState<boolean>(false);
+  const [aiProvider, setAiProvider] = useState<string>('gemini');
+  const [aiModel, setAiModel] = useState<string>('gemini-2.0-flash');
 
   const addQuestion = (questionText: string, answerText: string) => {
     const newQuestion: Question = {
@@ -104,7 +110,6 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const askQuestion = async (questionText: string, useGeminiBackup: boolean = false) => {
     if (!pdfText) return;
     
-    // Add the question with a loading state
     const tempId = Date.now().toString();
     const loadingQuestion: Question = {
       id: tempId,
@@ -118,34 +123,32 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsAnswerLoading(true);
     
     try {
-      // Call the Supabase Edge Function using the JavaScript client
-      const { data, error } = await supabase.functions.invoke('answer-from-pdf', {
+      const { data, error } = await supabase.functions.invoke('multi-ai-analysis', {
         body: {
           question: questionText,
-          pdfText: pdfText,
-          useGeminiBackup: useGeminiBackup
+          documentText: pdfText,
+          provider: aiProvider,
+          model: aiModel,
+          useBackup: useGeminiBackup,
+          isPresentation: false
         },
       });
 
       if (error) {
-        console.error('Error calling Edge Function:', error);
+        console.error('Error calling Multi-AI function:', error);
         throw new Error(error.message);
       }
 
       if (data.error) {
-        console.error('Gemini API error:', data.error);
+        console.error('AI analysis error:', data.error);
         let errorMessage = 'Sorry, I encountered an error while analyzing the document.';
         
-        // Provide more specific error messages based on the error type
-        if (data.error.includes('quota exceeded')) {
-          errorMessage = 'Sorry, the Gemini API quota has been exceeded. Please try again later.';
-        } else if (data.error.includes('API key')) {
-          errorMessage = 'There is an issue with the Gemini API key. Please contact the administrator.';
-        } else if (data.error.includes('blocked')) {
-          errorMessage = 'The content of your document or question was flagged by AI content filters. Please try a different document or question.';
+        if (data.error.includes('API key')) {
+          errorMessage = `Please configure your ${aiProvider.toUpperCase()} API key in the project settings.`;
+        } else if (data.error.includes('quota')) {
+          errorMessage = `${aiProvider.toUpperCase()} API quota exceeded. Please try again later.`;
         }
         
-        // Update with error message
         setQuestions((prev) => prev.map(q => 
           q.id === tempId 
             ? { ...q, answer: errorMessage, isLoading: false } 
@@ -154,7 +157,6 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return;
       }
 
-      // Update the question with the answer
       setQuestions((prev) => prev.map(q => 
         q.id === tempId 
           ? { ...q, answer: data.answer, isLoading: false } 
@@ -163,7 +165,6 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (error) {
       console.error('Error asking question:', error);
       
-      // Update with error message
       setQuestions((prev) => prev.map(q => 
         q.id === tempId 
           ? { 
@@ -182,10 +183,8 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!presentationText) return;
     
     console.log('Asking presentation question:', questionText);
-    console.log('Presentation text length:', presentationText.length);
-    console.log('Use Gemini backup:', useGeminiBackup);
+    console.log('Using AI provider:', aiProvider, 'model:', aiModel);
     
-    // Add the question with a loading state
     const tempId = Date.now().toString();
     const loadingQuestion: Question = {
       id: tempId,
@@ -199,44 +198,32 @@ export const PDFProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsPresentationAnswerLoading(true);
     
     try {
-      // Enhanced context specifically for presentations
-      const enhancedPrompt = `You are analyzing a PowerPoint presentation. Here is the content from all slides:
-
-${presentationText}
-
-User Question: ${questionText}
-
-Please provide a comprehensive answer based on the presentation content. If the presentation doesn't contain enough information to fully answer the question and the user has enabled AI assistance, you may supplement with general knowledge while clearly indicating what information comes from the presentation versus general knowledge.`;
-
-      // Call the Supabase Edge Function with enhanced presentation context
-      const { data, error } = await supabase.functions.invoke('answer-from-pdf', {
+      const { data, error } = await supabase.functions.invoke('multi-ai-analysis', {
         body: {
-          question: enhancedPrompt,
-          pdfText: presentationText,
-          useGeminiBackup: useGeminiBackup,
+          question: questionText,
+          documentText: presentationText,
+          provider: aiProvider,
+          model: aiModel,
+          useBackup: useGeminiBackup,
           isPresentation: true
         },
       });
 
       if (error) {
-        console.error('Error calling Edge Function:', error);
+        console.error('Error calling Multi-AI function:', error);
         throw new Error(error.message);
       }
 
       if (data.error) {
-        console.error('Gemini API error:', data.error);
+        console.error('AI analysis error:', data.error);
         let errorMessage = 'Sorry, I encountered an error while analyzing the presentation.';
         
-        // Provide more specific error messages based on the error type
-        if (data.error.includes('quota exceeded')) {
-          errorMessage = 'Sorry, the Gemini API quota has been exceeded. Please try again later.';
-        } else if (data.error.includes('API key')) {
-          errorMessage = 'There is an issue with the Gemini API key. Please contact the administrator.';
-        } else if (data.error.includes('blocked')) {
-          errorMessage = 'The content of your presentation or question was flagged by AI content filters. Please try a different presentation or question.';
+        if (data.error.includes('API key')) {
+          errorMessage = `Please configure your ${aiProvider.toUpperCase()} API key in the project settings.`;
+        } else if (data.error.includes('quota')) {
+          errorMessage = `${aiProvider.toUpperCase()} API quota exceeded. Please try again later.`;
         }
         
-        // Update with error message
         setPresentationQuestions((prev) => prev.map(q => 
           q.id === tempId 
             ? { ...q, answer: errorMessage, isLoading: false } 
@@ -245,9 +232,8 @@ Please provide a comprehensive answer based on the presentation content. If the 
         return;
       }
 
-      console.log('Received presentation answer:', data.answer?.substring(0, 100) + '...');
+      console.log('Received presentation answer from:', data.provider, data.model);
 
-      // Update the question with the answer
       setPresentationQuestions((prev) => prev.map(q => 
         q.id === tempId 
           ? { ...q, answer: data.answer, isLoading: false } 
@@ -256,7 +242,6 @@ Please provide a comprehensive answer based on the presentation content. If the 
     } catch (error) {
       console.error('Error asking presentation question:', error);
       
-      // Update with error message
       setPresentationQuestions((prev) => prev.map(q => 
         q.id === tempId 
           ? { 
@@ -411,6 +396,8 @@ Please provide a comprehensive answer based on the presentation content. If the 
         isPresentationAnswerLoading,
         mcqSet,
         isMCQGenerating,
+        aiProvider,
+        aiModel,
         setPdfFile,
         setPdfUrl,
         setPdfText,
@@ -428,6 +415,8 @@ Please provide a comprehensive answer based on the presentation content. If the 
         generateMCQs,
         generatePresentationMCQs,
         setUserAnswer,
+        setAiProvider,
+        setAiModel,
       }}
     >
       {children}
